@@ -4,36 +4,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class ErrorHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleBadRequest(Exception e) {
+    public ResponseEntity<Map<String, String>> handleBadRequest(Exception e) {
         return ResponseEntity
                 .badRequest()
-                .body(e.getMessage());
+                .body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<String> handleConflict(Exception e) {
+    public ResponseEntity<Map<String, String>> handleConflict(Exception e) {
         return ResponseEntity
                 .status(409)
-                .body(e.getMessage());
+                .body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<String> handleNotFound(Exception e) {
+    public ResponseEntity<Map<String, String>> handleNotFound(Exception e) {
         return ResponseEntity
                 .status(404)
-                .body(e.getMessage());
+                .body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleOther(Exception e) {
+    public ResponseEntity<Map<String, String>> handleOther(Exception e) {
         return ResponseEntity
                 .status(500)
-                .body("Internal server error");
+                .body(Map.of("error", "Internal server error"));
     }
 }
