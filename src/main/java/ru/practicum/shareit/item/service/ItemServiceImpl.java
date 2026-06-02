@@ -21,8 +21,6 @@ public class ItemServiceImpl implements ItemService {
     private final UserStorage userStorage;
 
 
-
-
     @Override
     public ItemDto create(Long ownerId, ItemDto dto) {
 
@@ -37,6 +35,7 @@ public class ItemServiceImpl implements ItemService {
 
         return ItemMapper.toDto(itemStorage.add(item));
     }
+
     @Override
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
 
