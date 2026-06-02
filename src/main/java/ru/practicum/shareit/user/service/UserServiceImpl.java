@@ -23,6 +23,9 @@ public class UserServiceImpl implements UserService {
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new IllegalArgumentException("Email is required");
         }
+        if (!dto.getEmail().contains("@")) {
+            throw new IllegalArgumentException("Invalid email");
+        }
 
         if (storage.existsByEmail(dto.getEmail())) {
             throw new IllegalStateException("Email already exists");
@@ -41,12 +44,21 @@ public class UserServiceImpl implements UserService {
             throw new NoSuchElementException("User not found");
         }
 
+
         if (dto.getEmail() != null) {
-            if (storage.existsByEmail(dto.getEmail())) {
+
+            if (dto.getEmail().isBlank() || !dto.getEmail().contains("@")) {
+                throw new IllegalArgumentException("Invalid email");
+            }
+
+            if (!dto.getEmail().equals(user.getEmail())
+                    && storage.existsByEmail(dto.getEmail())) {
                 throw new IllegalStateException("Email already exists");
             }
+
             user.setEmail(dto.getEmail());
         }
+
 
         if (dto.getName() != null) {
             user.setName(dto.getName());
