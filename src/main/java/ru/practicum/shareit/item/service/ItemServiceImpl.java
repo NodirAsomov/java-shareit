@@ -1,9 +1,9 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
@@ -31,33 +31,36 @@ public class ItemServiceImpl implements ItemService {
         return ItemMapper.toDto(itemStorage.add(item));
     }
 
+
     @Override
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
 
         Item item = itemStorage.getById(itemId);
 
         if (item == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            return null;
         }
 
-        if (item.getOwner() == null ||
-                !item.getOwner().getId().equals(ownerId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        if (item.getOwner() != null &&
+                item.getOwner().getId().equals(ownerId)) {
+
+            if (dto.getName() != null) {
+                item.setName(dto.getName());
+            }
+
+            if (dto.getDescription() != null) {
+                item.setDescription(dto.getDescription());
+            }
+
+            if (dto.getAvailable() != null) {
+                item.setAvailable(dto.getAvailable());
+            }
+
+            return ItemMapper.toDto(itemStorage.update(item));
         }
 
-        if (dto.getName() != null) {
-            item.setName(dto.getName());
-        }
 
-        if (dto.getDescription() != null) {
-            item.setDescription(dto.getDescription());
-        }
-
-        if (dto.getAvailable() != null) {
-            item.setAvailable(dto.getAvailable());
-        }
-
-        return ItemMapper.toDto(itemStorage.update(item));
+        return ItemMapper.toDto(item);
     }
 
     @Override
