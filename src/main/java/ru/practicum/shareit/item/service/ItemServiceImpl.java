@@ -20,10 +20,11 @@ public class ItemServiceImpl implements ItemService {
     private final ItemStorage itemStorage;
     private final UserStorage userStorage;
 
+
     @Override
     public ItemDto create(Long ownerId, ItemDto dto) {
-        User owner = userStorage.getById(ownerId);
 
+        User owner = userStorage.getById(ownerId);
 
         Item item = ItemMapper.fromDto(dto);
         item.setOwner(owner);
@@ -33,6 +34,7 @@ public class ItemServiceImpl implements ItemService {
 
 
     @Override
+
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
 
         Item item = itemStorage.getById(itemId);
@@ -41,26 +43,11 @@ public class ItemServiceImpl implements ItemService {
             return null;
         }
 
-        if (item.getOwner() != null &&
-                item.getOwner().getId().equals(ownerId)) {
+        if (dto.getName() != null) item.setName(dto.getName());
+        if (dto.getDescription() != null) item.setDescription(dto.getDescription());
+        if (dto.getAvailable() != null) item.setAvailable(dto.getAvailable());
 
-            if (dto.getName() != null) {
-                item.setName(dto.getName());
-            }
-
-            if (dto.getDescription() != null) {
-                item.setDescription(dto.getDescription());
-            }
-
-            if (dto.getAvailable() != null) {
-                item.setAvailable(dto.getAvailable());
-            }
-
-            return ItemMapper.toDto(itemStorage.update(item));
-        }
-
-
-        return ItemMapper.toDto(item);
+        return ItemMapper.toDto(itemStorage.update(item));
     }
 
     @Override
