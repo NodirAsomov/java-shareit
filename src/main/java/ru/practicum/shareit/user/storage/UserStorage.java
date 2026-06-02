@@ -1,6 +1,7 @@
 package ru.practicum.shareit.user.storage;
 
 import ru.practicum.shareit.user.User;
+
 import java.util.List;
 
 public interface UserStorage {
@@ -14,4 +15,6 @@ public interface UserStorage {
     List<User> getAll();
 
     void delete(Long id);
+
+    boolean existsByEmail(String email);
 }

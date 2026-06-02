@@ -8,6 +8,7 @@ import ru.practicum.shareit.user.storage.UserStorage;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -15,22 +16,40 @@ public class UserServiceImpl implements UserService {
 
     private final UserStorage storage;
 
+
     @Override
     public UserDto create(UserDto dto) {
+
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        if (storage.existsByEmail(dto.getEmail())) {
+            throw new IllegalStateException("Email already exists");
+        }
+
         User user = UserMapper.fromDto(dto);
         return UserMapper.toDto(storage.add(user));
     }
 
     @Override
     public UserDto update(Long id, UserDto dto) {
+
         User user = storage.getById(id);
 
-        if (dto.getName() != null) {
-            user.setName(dto.getName());
+        if (user == null) {
+            throw new NoSuchElementException("User not found");
         }
 
         if (dto.getEmail() != null) {
+            if (storage.existsByEmail(dto.getEmail())) {
+                throw new IllegalStateException("Email already exists");
+            }
             user.setEmail(dto.getEmail());
+        }
+
+        if (dto.getName() != null) {
+            user.setName(dto.getName());
         }
 
         return UserMapper.toDto(storage.update(user));
