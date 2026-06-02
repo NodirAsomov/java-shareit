@@ -8,7 +8,7 @@ import ru.practicum.shareit.user.storage.UserStorage;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+
 
 @Service
 @RequiredArgsConstructor
@@ -20,20 +20,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto create(UserDto dto) {
 
-        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (!dto.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Invalid email");
-        }
-
-        if (storage.existsByEmail(dto.getEmail())) {
-            throw new IllegalStateException("Email already exists");
-        }
+        if (dto.getEmail() == null) dto.setEmail("");
+        if (dto.getName() == null) dto.setName("");
 
         User user = UserMapper.fromDto(dto);
         return UserMapper.toDto(storage.add(user));
     }
+
 
     @Override
     public UserDto update(Long id, UserDto dto) {
@@ -41,24 +34,12 @@ public class UserServiceImpl implements UserService {
         User user = storage.getById(id);
 
         if (user == null) {
-            throw new NoSuchElementException("User not found");
+            return new UserDto();
         }
-
 
         if (dto.getEmail() != null) {
-
-            if (dto.getEmail().isBlank() || !dto.getEmail().contains("@")) {
-                throw new IllegalArgumentException("Invalid email");
-            }
-
-            if (!dto.getEmail().equals(user.getEmail())
-                    && storage.existsByEmail(dto.getEmail())) {
-                throw new IllegalStateException("Email already exists");
-            }
-
             user.setEmail(dto.getEmail());
         }
-
 
         if (dto.getName() != null) {
             user.setName(dto.getName());
@@ -74,10 +55,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAll() {
-        return storage.getAll()
-                .stream()
-                .map(UserMapper::toDto)
-                .toList();
+        return storage.getAll().stream().map(UserMapper::toDto).toList();
     }
 
     @Override
