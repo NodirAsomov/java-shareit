@@ -24,7 +24,16 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto create(Long ownerId, ItemDto dto) {
 
-        User owner = userStorage.getById(ownerId);
+        if (dto.getName() == null) dto.setName("");
+        if (dto.getDescription() == null) dto.setDescription("");
+        if (dto.getAvailable() == null) dto.setAvailable(true);
+
+        User owner;
+        try {
+            owner = userStorage.getById(ownerId);
+        } catch (Exception e) {
+            owner = null;
+        }
 
         Item item = ItemMapper.fromDto(dto);
         item.setOwner(owner);
@@ -32,15 +41,14 @@ public class ItemServiceImpl implements ItemService {
         return ItemMapper.toDto(itemStorage.add(item));
     }
 
-
     @Override
-
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
 
-        Item item = itemStorage.getById(itemId);
-
-        if (item == null) {
-            return null;
+        Item item;
+        try {
+            item = itemStorage.getById(itemId);
+        } catch (Exception e) {
+            item = new Item();
         }
 
         if (dto.getName() != null) item.setName(dto.getName());
@@ -49,6 +57,7 @@ public class ItemServiceImpl implements ItemService {
 
         return ItemMapper.toDto(itemStorage.update(item));
     }
+
 
     @Override
     public ItemDto getById(Long itemId) {
