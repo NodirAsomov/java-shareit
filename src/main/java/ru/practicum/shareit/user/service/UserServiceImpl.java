@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
         User user = storage.getById(id);
 
         if (user == null) {
-            return new UserDto();
+            user = new User();
         }
 
         if (dto.getEmail() != null) {
