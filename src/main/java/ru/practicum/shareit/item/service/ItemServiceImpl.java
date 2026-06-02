@@ -24,9 +24,6 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto create(Long ownerId, ItemDto dto) {
         User owner = userStorage.getById(ownerId);
 
-        if (owner == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
 
         Item item = ItemMapper.fromDto(dto);
         item.setOwner(owner);
@@ -36,11 +33,16 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
+
         Item item = itemStorage.getById(itemId);
 
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
 
-        if (!item.getOwner().getId().equals(ownerId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can update item");
+        if (item.getOwner() == null ||
+                !item.getOwner().getId().equals(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
 
         if (dto.getName() != null) {
