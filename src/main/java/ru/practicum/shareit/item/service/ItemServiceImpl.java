@@ -12,6 +12,7 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.storage.UserStorage;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -20,15 +21,30 @@ public class ItemServiceImpl implements ItemService {
     private final ItemStorage itemStorage;
     private final UserStorage userStorage;
 
-
     @Override
-    public ItemDto create(Long ownerId, ItemDto dto) {
+    public ItemDto create(Long userId, ItemDto dto) {
 
-        if (dto.getName() == null) dto.setName("");
-        if (dto.getDescription() == null) dto.setDescription("");
-        if (dto.getAvailable() == null) dto.setAvailable(true);
+        if (userId == null) {
+            throw new IllegalArgumentException("User id is required");
+        }
 
-        User owner = userStorage.getById(ownerId);
+        User owner = userStorage.getById(userId);
+
+        if (owner == null) {
+            throw new NoSuchElementException("User not found");
+        }
+
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+
+        if (dto.getDescription() == null || dto.getDescription().isBlank()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+
+        if (dto.getAvailable() == null) {
+            throw new IllegalArgumentException("Available is required");
+        }
 
         Item item = ItemMapper.fromDto(dto);
         item.setOwner(owner);
@@ -37,33 +53,57 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
+    public ItemDto update(Long userId, Long itemId, ItemDto dto) {
+
+        if (userId == null) {
+            throw new IllegalArgumentException("User id is required");
+        }
 
         Item item = itemStorage.getById(itemId);
 
-        if (dto.getName() != null) item.setName(dto.getName());
-        if (dto.getDescription() != null) item.setDescription(dto.getDescription());
-        if (dto.getAvailable() != null) item.setAvailable(dto.getAvailable());
+        if (item == null) {
+            throw new NoSuchElementException("Item not found");
+        }
+
+        if (!item.getOwner().getId().equals(userId)) {
+            throw new NoSuchElementException("Only owner can update item");
+        }
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            item.setName(dto.getName());
+        }
+
+        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+            item.setDescription(dto.getDescription());
+        }
+
+        if (dto.getAvailable() != null) {
+            item.setAvailable(dto.getAvailable());
+        }
 
         return ItemMapper.toDto(itemStorage.update(item));
     }
 
-
     @Override
-    public ItemDto getById(Long itemId) {
-        return ItemMapper.toDto(itemStorage.getById(itemId));
+    public ItemDto getById(Long id) {
+        Item item = itemStorage.getById(id);
+
+        if (item == null) {
+            throw new NoSuchElementException("Item not found");
+        }
+
+        return ItemMapper.toDto(item);
     }
 
     @Override
-    public List<ItemDto> getOwnerItems(Long ownerId) {
-        return itemStorage.getByOwnerId(ownerId)
+    public List<ItemDto> getOwnerItems(Long userId) {
+        return itemStorage.getByOwnerId(userId)
                 .stream()
                 .map(ItemMapper::toDto)
                 .toList();
     }
 
     @Override
-
     public List<ItemDto> search(String text) {
 
         if (text == null || text.isBlank()) {
@@ -72,16 +112,12 @@ public class ItemServiceImpl implements ItemService {
 
         String query = text.toLowerCase();
 
-        return itemStorage.getAll()
-                .stream()
-                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
-                .filter(item -> {
-                    String name = item.getName();
-                    String desc = item.getDescription();
-
-                    return (name != null && name.toLowerCase().contains(query))
-                            || (desc != null && desc.toLowerCase().contains(query));
-                })
+        return itemStorage.getAll().stream()
+                .filter(Item::getAvailable)
+                .filter(item ->
+                        (item.getName() != null && item.getName().toLowerCase().contains(query)) ||
+                                (item.getDescription() != null && item.getDescription().toLowerCase().contains(query))
+                )
                 .map(ItemMapper::toDto)
                 .toList();
     }

@@ -8,7 +8,7 @@ import ru.practicum.shareit.user.storage.UserStorage;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
-
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -16,17 +16,25 @@ public class UserServiceImpl implements UserService {
 
     private final UserStorage storage;
 
-
     @Override
     public UserDto create(UserDto dto) {
 
-        if (dto.getEmail() == null) dto.setEmail("");
-        if (dto.getName() == null) dto.setName("");
+        if (dto.getEmail() == null || dto.getEmail().isBlank()
+                || !dto.getEmail().contains("@")) {
+            throw new IllegalArgumentException("Invalid email");
+        }
+
+        if (storage.existsByEmail(dto.getEmail())) {
+            throw new IllegalStateException("Email already exists");
+        }
+
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new IllegalArgumentException("Name is required");
+        }
 
         User user = UserMapper.fromDto(dto);
         return UserMapper.toDto(storage.add(user));
     }
-
 
     @Override
     public UserDto update(Long id, UserDto dto) {
@@ -34,14 +42,24 @@ public class UserServiceImpl implements UserService {
         User user = storage.getById(id);
 
         if (user == null) {
-            user = new User();
+            throw new NoSuchElementException("User not found");
         }
 
         if (dto.getEmail() != null) {
+
+            if (!dto.getEmail().contains("@")) {
+                throw new IllegalArgumentException("Invalid email");
+            }
+
+            if (!dto.getEmail().equals(user.getEmail())
+                    && storage.existsByEmail(dto.getEmail())) {
+                throw new IllegalStateException("Email already exists");
+            }
+
             user.setEmail(dto.getEmail());
         }
 
-        if (dto.getName() != null) {
+        if (dto.getName() != null && !dto.getName().isBlank()) {
             user.setName(dto.getName());
         }
 
@@ -50,12 +68,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getById(Long id) {
-        return UserMapper.toDto(storage.getById(id));
+        User user = storage.getById(id);
+
+        if (user == null) {
+            throw new NoSuchElementException("User not found");
+        }
+
+        return UserMapper.toDto(user);
     }
 
     @Override
     public List<UserDto> getAll() {
-        return storage.getAll().stream().map(UserMapper::toDto).toList();
+        return storage.getAll().stream()
+                .map(UserMapper::toDto)
+                .toList();
     }
 
     @Override
