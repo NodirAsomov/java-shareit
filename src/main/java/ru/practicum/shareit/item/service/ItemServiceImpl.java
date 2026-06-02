@@ -1,7 +1,9 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
@@ -22,6 +24,10 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto create(Long ownerId, ItemDto dto) {
         User owner = userStorage.getById(ownerId);
 
+        if (owner == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
         Item item = ItemMapper.fromDto(dto);
         item.setOwner(owner);
 
@@ -34,7 +40,7 @@ public class ItemServiceImpl implements ItemService {
 
 
         if (!item.getOwner().getId().equals(ownerId)) {
-            throw new RuntimeException("Only owner can update item");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can update item");
         }
 
         if (dto.getName() != null) {
@@ -66,6 +72,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+
     public List<ItemDto> search(String text) {
 
         if (text == null || text.isBlank()) {
@@ -76,10 +83,14 @@ public class ItemServiceImpl implements ItemService {
 
         return itemStorage.getAll()
                 .stream()
-                .filter(Item::getAvailable)
-                .filter(item ->
-                        item.getName().toLowerCase().contains(query)
-                                || item.getDescription().toLowerCase().contains(query))
+                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
+                .filter(item -> {
+                    String name = item.getName();
+                    String desc = item.getDescription();
+
+                    return (name != null && name.toLowerCase().contains(query))
+                            || (desc != null && desc.toLowerCase().contains(query));
+                })
                 .map(ItemMapper::toDto)
                 .toList();
     }
