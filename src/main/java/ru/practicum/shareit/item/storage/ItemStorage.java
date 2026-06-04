@@ -12,17 +12,12 @@ import java.util.Map;
 public class ItemStorage {
 
     private final Map<Long, Item> items = new HashMap<>();
-    private long nextId = 1;
+    private long id = 1;
 
-    public Item create(Item item) {
-        item.setId(nextId++);
-        items.put(item.getId(), item);
-        return item;
-    }
-
-    public Item update(Item item) {
-        items.put(item.getId(), item);
-        return item;
+    public Item create(Item i) {
+        i.setId(id++);
+        items.put(i.getId(), i);
+        return i;
     }
 
     public Item get(Long id) {
@@ -31,5 +26,10 @@ public class ItemStorage {
 
     public Collection<Item> getAll() {
         return items.values();
+    }
+
+    public Item update(Item i) {
+        items.put(i.getId(), i);
+        return i;
     }
 }

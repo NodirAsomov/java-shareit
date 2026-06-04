@@ -7,22 +7,16 @@ import java.util.Collection;
 import java.util.HashMap;
 
 import java.util.Map;
-
 @Repository
 public class UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
-    private long nextId = 1;
+    private long id = 1;
 
-    public User create(User user) {
-        user.setId(nextId++);
-        users.put(user.getId(), user);
-        return user;
-    }
-
-    public User update(User user) {
-        users.put(user.getId(), user);
-        return user;
+    public User create(User u) {
+        u.setId(id++);
+        users.put(u.getId(), u);
+        return u;
     }
 
     public User get(Long id) {
@@ -33,7 +27,8 @@ public class UserStorage {
         return users.values();
     }
 
-    public void delete(Long id) {
-        users.remove(id);
+    public User update(User u) {
+        users.put(u.getId(), u);
+        return u;
     }
 }

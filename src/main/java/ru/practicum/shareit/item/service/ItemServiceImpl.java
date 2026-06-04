@@ -4,70 +4,67 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.storage.ItemStorage;
+import ru.practicum.shareit.user.storage.UserStorage;
 
 
 import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
-    private final ItemStorage itemStorage;
+    private final ItemStorage storage;
+    private final UserStorage userStorage;
 
     @Override
-    public ItemDto create(ItemDto dto, Long ownerId) {
+    public ItemDto create(Long userId, ItemDto dto) {
 
-        Item item = new Item(
-                null,
-                dto.getName(),
-                dto.getDescription(),
-                dto.getAvailable(),
-                ownerId
-        );
+        if (userStorage.get(userId) == null) {
+            throw new NotFoundException("User not found");
+        }
 
-        return ItemMapper.toDto(itemStorage.create(item));
+        Item i = new Item();
+        i.setName(dto.getName());
+        i.setDescription(dto.getDescription());
+        i.setAvailable(dto.getAvailable());
+        i.setOwnerId(userId);
+
+        return ItemMapper.toDto(storage.create(i));
     }
 
     @Override
-    public ItemDto update(Long itemId,
-                          Long ownerId,
-                          ItemDto dto) {
+    public ItemDto update(Long userId, Long itemId, ItemDto dto) {
 
-        Item item = itemStorage.get(itemId);
+        Item i = storage.get(itemId);
+        if (i == null) throw new NotFoundException("Item not found");
 
-        if (!item.getOwnerId().equals(ownerId)) {
-            throw new RuntimeException("Редактировать может только владелец");
+        if (!i.getOwnerId().equals(userId)) {
+            throw new NotFoundException("Not owner");
         }
 
-        if (dto.getName() != null) {
-            item.setName(dto.getName());
-        }
+        if (dto.getName() != null) i.setName(dto.getName());
+        if (dto.getDescription() != null) i.setDescription(dto.getDescription());
+        if (dto.getAvailable() != null) i.setAvailable(dto.getAvailable());
 
-        if (dto.getDescription() != null) {
-            item.setDescription(dto.getDescription());
-        }
-
-        if (dto.getAvailable() != null) {
-            item.setAvailable(dto.getAvailable());
-        }
-
-        return ItemMapper.toDto(itemStorage.update(item));
+        return ItemMapper.toDto(storage.update(i));
     }
 
     @Override
-    public ItemDto get(Long itemId) {
-        return ItemMapper.toDto(itemStorage.get(itemId));
+    public ItemDto get(Long id) {
+        Item i = storage.get(id);
+        if (i == null) throw new NotFoundException("Item not found");
+        return ItemMapper.toDto(i);
     }
 
     @Override
-    public List<ItemDto> getOwnerItems(Long ownerId) {
-        return itemStorage.getAll().stream()
-                .filter(item -> item.getOwnerId().equals(ownerId))
+    public List<ItemDto> getOwnerItems(Long userId) {
+        return storage.getAll().stream()
+                .filter(i -> i.getOwnerId().equals(userId))
                 .map(ItemMapper::toDto)
                 .toList();
     }
@@ -75,17 +72,18 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> search(String text) {
 
-        if (text.isBlank()) {
+        if (text == null || text.isBlank()) {
             return List.of();
         }
 
-        String query = text.toLowerCase();
+        String q = text.toLowerCase();
 
-        return itemStorage.getAll().stream()
+        return storage.getAll().stream()
                 .filter(Item::getAvailable)
-                .filter(item ->
-                        item.getName().toLowerCase().contains(query)
-                                || item.getDescription().toLowerCase().contains(query))
+                .filter(i ->
+                        (i.getName() != null && i.getName().toLowerCase().contains(q)) ||
+                                (i.getDescription() != null && i.getDescription().toLowerCase().contains(q))
+                )
                 .map(ItemMapper::toDto)
                 .toList();
     }
