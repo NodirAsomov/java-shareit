@@ -1,18 +1,35 @@
 package ru.practicum.shareit.item.storage;
 
+import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
 
-public interface ItemStorage {
+import java.util.Map;
 
-    Item add(Item item);
+@Repository
+public class ItemStorage {
 
-    Item update(Item item);
+    private final Map<Long, Item> items = new HashMap<>();
+    private long nextId = 1;
 
-    Item getById(Long id);
+    public Item create(Item item) {
+        item.setId(nextId++);
+        items.put(item.getId(), item);
+        return item;
+    }
 
-    List<Item> getAll();
+    public Item update(Item item) {
+        items.put(item.getId(), item);
+        return item;
+    }
 
-    List<Item> getByOwnerId(Long ownerId);
+    public Item get(Long id) {
+        return items.get(id);
+    }
+
+    public Collection<Item> getAll() {
+        return items.values();
+    }
 }

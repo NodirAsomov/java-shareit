@@ -8,72 +8,47 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.storage.ItemStorage;
-import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.storage.UserStorage;
+
 
 import java.util.List;
-import java.util.NoSuchElementException;
+
 
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
     private final ItemStorage itemStorage;
-    private final UserStorage userStorage;
 
     @Override
-    public ItemDto create(Long userId, ItemDto dto) {
+    public ItemDto create(ItemDto dto, Long ownerId) {
 
-        if (userId == null) {
-            throw new IllegalArgumentException("User id is required");
-        }
+        Item item = new Item(
+                null,
+                dto.getName(),
+                dto.getDescription(),
+                dto.getAvailable(),
+                ownerId
+        );
 
-        User owner = userStorage.getById(userId);
-
-        if (owner == null) {
-            throw new NoSuchElementException("User not found");
-        }
-
-        if (dto.getName() == null || dto.getName().isBlank()) {
-            throw new IllegalArgumentException("Name is required");
-        }
-
-        if (dto.getDescription() == null || dto.getDescription().isBlank()) {
-            throw new IllegalArgumentException("Description is required");
-        }
-
-        if (dto.getAvailable() == null) {
-            throw new IllegalArgumentException("Available is required");
-        }
-
-        Item item = ItemMapper.fromDto(dto);
-        item.setOwner(owner);
-
-        return ItemMapper.toDto(itemStorage.add(item));
+        return ItemMapper.toDto(itemStorage.create(item));
     }
 
     @Override
-    public ItemDto update(Long userId, Long itemId, ItemDto dto) {
+    public ItemDto update(Long itemId,
+                          Long ownerId,
+                          ItemDto dto) {
 
-        if (userId == null) {
-            throw new IllegalArgumentException("User id is required");
+        Item item = itemStorage.get(itemId);
+
+        if (!item.getOwnerId().equals(ownerId)) {
+            throw new RuntimeException("Редактировать может только владелец");
         }
 
-        Item item = itemStorage.getById(itemId);
-
-        if (item == null) {
-            throw new NoSuchElementException("Item not found");
-        }
-
-        if (!item.getOwner().getId().equals(userId)) {
-            throw new NoSuchElementException("Only owner can update item");
-        }
-
-        if (dto.getName() != null && !dto.getName().isBlank()) {
+        if (dto.getName() != null) {
             item.setName(dto.getName());
         }
 
-        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+        if (dto.getDescription() != null) {
             item.setDescription(dto.getDescription());
         }
 
@@ -85,20 +60,14 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto getById(Long id) {
-        Item item = itemStorage.getById(id);
-
-        if (item == null) {
-            throw new NoSuchElementException("Item not found");
-        }
-
-        return ItemMapper.toDto(item);
+    public ItemDto get(Long itemId) {
+        return ItemMapper.toDto(itemStorage.get(itemId));
     }
 
     @Override
-    public List<ItemDto> getOwnerItems(Long userId) {
-        return itemStorage.getByOwnerId(userId)
-                .stream()
+    public List<ItemDto> getOwnerItems(Long ownerId) {
+        return itemStorage.getAll().stream()
+                .filter(item -> item.getOwnerId().equals(ownerId))
                 .map(ItemMapper::toDto)
                 .toList();
     }
@@ -106,7 +75,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> search(String text) {
 
-        if (text == null || text.isBlank()) {
+        if (text.isBlank()) {
             return List.of();
         }
 
@@ -115,9 +84,8 @@ public class ItemServiceImpl implements ItemService {
         return itemStorage.getAll().stream()
                 .filter(Item::getAvailable)
                 .filter(item ->
-                        (item.getName() != null && item.getName().toLowerCase().contains(query)) ||
-                                (item.getDescription() != null && item.getDescription().toLowerCase().contains(query))
-                )
+                        item.getName().toLowerCase().contains(query)
+                                || item.getDescription().toLowerCase().contains(query))
                 .map(ItemMapper::toDto)
                 .toList();
     }

@@ -1,20 +1,39 @@
 package ru.practicum.shareit.user.storage;
 
+import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.user.User;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
 
-public interface UserStorage {
+import java.util.Map;
 
-    User add(User user);
+@Repository
+public class UserStorage {
 
-    User update(User user);
+    private final Map<Long, User> users = new HashMap<>();
+    private long nextId = 1;
 
-    User getById(Long id);
+    public User create(User user) {
+        user.setId(nextId++);
+        users.put(user.getId(), user);
+        return user;
+    }
 
-    List<User> getAll();
+    public User update(User user) {
+        users.put(user.getId(), user);
+        return user;
+    }
 
-    void delete(Long id);
+    public User get(Long id) {
+        return users.get(id);
+    }
 
-    boolean existsByEmail(String email);
+    public Collection<User> getAll() {
+        return users.values();
+    }
+
+    public void delete(Long id) {
+        users.remove(id);
+    }
 }

@@ -8,84 +8,42 @@ import ru.practicum.shareit.user.storage.UserStorage;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserStorage storage;
+    private final UserStorage userStorage;
 
     @Override
     public UserDto create(UserDto dto) {
-
-        if (dto.getEmail() == null || dto.getEmail().isBlank()
-                || !dto.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Invalid email");
-        }
-
-        if (storage.existsByEmail(dto.getEmail())) {
-            throw new IllegalStateException("Email already exists");
-        }
-
-        if (dto.getName() == null || dto.getName().isBlank()) {
-            throw new IllegalArgumentException("Name is required");
-        }
-
-        User user = UserMapper.fromDto(dto);
-        return UserMapper.toDto(storage.add(user));
+        User user = UserMapper.toUser(dto);
+        return UserMapper.toDto(userStorage.create(user));
     }
 
     @Override
     public UserDto update(Long id, UserDto dto) {
+        User user = UserMapper.toUser(dto);
+        user.setId(id);
 
-        User user = storage.getById(id);
-
-        if (user == null) {
-            throw new NoSuchElementException("User not found");
-        }
-
-        if (dto.getEmail() != null) {
-
-            if (!dto.getEmail().contains("@")) {
-                throw new IllegalArgumentException("Invalid email");
-            }
-
-            if (!dto.getEmail().equals(user.getEmail())
-                    && storage.existsByEmail(dto.getEmail())) {
-                throw new IllegalStateException("Email already exists");
-            }
-
-            user.setEmail(dto.getEmail());
-        }
-
-        if (dto.getName() != null && !dto.getName().isBlank()) {
-            user.setName(dto.getName());
-        }
-
-        return UserMapper.toDto(storage.update(user));
+        return UserMapper.toDto(userStorage.update(user));
     }
 
     @Override
-    public UserDto getById(Long id) {
-        User user = storage.getById(id);
-
-        if (user == null) {
-            throw new NoSuchElementException("User not found");
-        }
-
-        return UserMapper.toDto(user);
+    public UserDto get(Long id) {
+        return UserMapper.toDto(userStorage.get(id));
     }
 
     @Override
     public List<UserDto> getAll() {
-        return storage.getAll().stream()
+        return userStorage.getAll().stream()
                 .map(UserMapper::toDto)
                 .toList();
     }
 
     @Override
     public void delete(Long id) {
-        storage.delete(id);
+        userStorage.delete(id);
     }
 }
