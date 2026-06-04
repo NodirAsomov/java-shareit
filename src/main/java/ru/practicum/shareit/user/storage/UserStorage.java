@@ -32,4 +32,8 @@ public class UserStorage {
         users.put(u.getId(), u);
         return u;
     }
+
+    public void delete(Long id) {
+        users.remove(id);
+    }
 }

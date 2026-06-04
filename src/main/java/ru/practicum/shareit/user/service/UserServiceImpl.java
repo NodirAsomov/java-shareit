@@ -54,4 +54,9 @@ public class UserServiceImpl implements UserService {
         if (u == null) throw new NotFoundException("User not found");
         return UserMapper.toDto(u);
     }
+
+    @Override
+    public void delete(Long id) {
+        storage.delete(id);
+    }
 }
