@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 
 import ru.practicum.shareit.exception.NotFoundException;
@@ -10,7 +9,6 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.storage.ItemStorage;
 import ru.practicum.shareit.user.storage.UserStorage;
-
 
 import java.util.List;
 
@@ -21,50 +19,66 @@ public class ItemServiceImpl implements ItemService {
     private final ItemStorage storage;
     private final UserStorage userStorage;
 
+    private Item getItemOrThrow(Long itemId) {
+        Item item = storage.get(itemId);
+        if (item == null) {
+            throw new NotFoundException("Item with id=" + itemId + " not found");
+        }
+        return item;
+    }
+
     @Override
     public ItemDto create(Long userId, ItemDto dto) {
 
         if (userStorage.get(userId) == null) {
-            throw new NotFoundException("User not found");
+            throw new NotFoundException("User with id=" + userId + " not found");
         }
 
-        Item i = new Item();
-        i.setName(dto.getName());
-        i.setDescription(dto.getDescription());
-        i.setAvailable(dto.getAvailable());
-        i.setOwnerId(userId);
-
-        return ItemMapper.toDto(storage.create(i));
+        Item item = ItemMapper.toItem(dto, userId);
+        return ItemMapper.toDto(storage.create(item));
     }
 
     @Override
     public ItemDto update(Long userId, Long itemId, ItemDto dto) {
 
-        Item i = storage.get(itemId);
-        if (i == null) throw new NotFoundException("Item not found");
+        Item item = getItemOrThrow(itemId);
 
-        if (!i.getOwnerId().equals(userId)) {
-            throw new NotFoundException("Not owner");
+        if (!item.getOwnerId().equals(userId)) {
+            throw new NotFoundException(
+                    "User with id=" + userId +
+                            " is not owner of item with id=" + itemId
+            );
         }
 
-        if (dto.getName() != null) i.setName(dto.getName());
-        if (dto.getDescription() != null) i.setDescription(dto.getDescription());
-        if (dto.getAvailable() != null) i.setAvailable(dto.getAvailable());
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            item.setName(dto.getName());
+        }
 
-        return ItemMapper.toDto(storage.update(i));
+        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+            item.setDescription(dto.getDescription());
+        }
+
+        if (dto.getAvailable() != null) {
+            item.setAvailable(dto.getAvailable());
+        }
+
+        return ItemMapper.toDto(storage.update(item));
     }
 
     @Override
     public ItemDto get(Long id) {
-        Item i = storage.get(id);
-        if (i == null) throw new NotFoundException("Item not found");
-        return ItemMapper.toDto(i);
+        Item item = getItemOrThrow(id);
+        return ItemMapper.toDto(item);
     }
 
     @Override
     public List<ItemDto> getOwnerItems(Long userId) {
-        return storage.getAll().stream()
-                .filter(i -> i.getOwnerId().equals(userId))
+
+        if (userStorage.get(userId) == null) {
+            throw new NotFoundException("User with id=" + userId + " not found");
+        }
+
+        return storage.getByOwnerId(userId).stream()
                 .map(ItemMapper::toDto)
                 .toList();
     }
@@ -76,14 +90,7 @@ public class ItemServiceImpl implements ItemService {
             return List.of();
         }
 
-        String q = text.toLowerCase();
-
-        return storage.getAll().stream()
-                .filter(Item::getAvailable)
-                .filter(i ->
-                        (i.getName() != null && i.getName().toLowerCase().contains(q)) ||
-                                (i.getDescription() != null && i.getDescription().toLowerCase().contains(q))
-                )
+        return storage.search(text).stream()
                 .map(ItemMapper::toDto)
                 .toList();
     }

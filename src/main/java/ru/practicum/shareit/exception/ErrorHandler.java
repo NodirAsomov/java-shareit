@@ -28,4 +28,10 @@ public class ErrorHandler {
     public Map<String, String> handleValidation(Exception e) {
         return Map.of("error", "Validation failed");
     }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleException(Exception e) {
+        return Map.of("error", "Internal server error");
+    }
 }

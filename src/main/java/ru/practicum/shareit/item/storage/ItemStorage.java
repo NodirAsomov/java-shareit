@@ -24,12 +24,27 @@ public class ItemStorage {
         return items.get(id);
     }
 
-    public Collection<Item> getAll() {
-        return items.values();
-    }
 
     public Item update(Item i) {
         items.put(i.getId(), i);
         return i;
+    }
+
+    public Collection<Item> getByOwnerId(Long userId) {
+        return items.values().stream()
+                .filter(i -> i.getOwnerId().equals(userId))
+                .toList();
+    }
+
+    public Collection<Item> search(String text) {
+        String q = text.toLowerCase();
+
+        return items.values().stream()
+                .filter(Item::getAvailable)
+                .filter(i ->
+                        (i.getName() != null && i.getName().toLowerCase().contains(q)) ||
+                                (i.getDescription() != null && i.getDescription().toLowerCase().contains(q))
+                )
+                .toList();
     }
 }

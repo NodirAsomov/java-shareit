@@ -3,7 +3,7 @@ package ru.practicum.shareit.user.storage;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.user.User;
 
-import java.util.Collection;
+
 import java.util.HashMap;
 
 import java.util.Map;
@@ -24,9 +24,6 @@ public class UserStorage {
         return users.get(id);
     }
 
-    public Collection<User> getAll() {
-        return users.values();
-    }
 
     public User update(User u) {
         users.put(u.getId(), u);
@@ -35,5 +32,16 @@ public class UserStorage {
 
     public void delete(Long id) {
         users.remove(id);
+    }
+
+    public boolean emailExists(String email) {
+        return users.values().stream()
+                .anyMatch(u -> u.getEmail().equals(email));
+    }
+
+    public boolean emailExistsForOtherUser(String email, Long userId) {
+        return users.values().stream()
+                .anyMatch(u -> u.getEmail().equals(email)
+                        && !u.getId().equals(userId));
     }
 }
