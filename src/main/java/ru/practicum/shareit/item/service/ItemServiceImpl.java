@@ -27,7 +27,7 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
 
     private List<CommentDto> getComments(Long itemId) {
-        return commentRepository.findByItem_IdOrderByCreatedDesc(itemId)
+        return commentRepository.findByItemIdOrderByCreatedDesc(itemId)
                 .stream()
                 .map(c -> CommentDto.builder()
                         .id(c.getId())
