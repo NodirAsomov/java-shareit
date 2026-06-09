@@ -47,10 +47,10 @@ public class ItemController {
         return service.search(text);
     }
 
-    @PostMapping("/items/{itemId}/comment")
+    @PostMapping("/{itemId}/comment")
     public CommentDto addComment(@PathVariable Long itemId,
                                  @RequestBody CommentDto dto,
                                  @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return service.addComment(itemId, userId, dto);
+        return service.addComment(userId, itemId, dto);
     }
 }
