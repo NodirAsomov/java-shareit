@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Comment;
 import ru.practicum.shareit.item.CommentRepository;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -32,6 +33,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(c -> CommentDto.builder()
                         .id(c.getId())
                         .text(c.getText())
+                        .authorName(c.getAuthor().getName())
                         .created(c.getCreated())
                         .build())
                 .toList();
@@ -157,7 +159,10 @@ public class ItemServiceImpl implements ItemService {
                 );
 
         if (!hasBooking) {
-            throw new NotFoundException("User has not booked this item");
+
+
+            throw new ValidationException("User has not completed booking");
+
         }
 
         Comment comment = new Comment();
@@ -171,6 +176,7 @@ public class ItemServiceImpl implements ItemService {
         return CommentDto.builder()
                 .id(saved.getId())
                 .text(saved.getText())
+                .authorName(saved.getAuthor().getName())
                 .created(saved.getCreated())
                 .build();
     }
