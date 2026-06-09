@@ -1,20 +1,18 @@
 package ru.practicum.shareit.booking.service;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.BookingState;
-import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.booking.*;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,32 +22,30 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-
     private final BookingMapper bookingMapper;
-
 
     @Override
     public BookingDto create(Long userId, BookingCreateDto dto) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Item item = itemRepository.findById(dto.getItemId())
-                .orElseThrow(() -> new RuntimeException("Item not found"));
-
-        if (!item.getAvailable()) {
-            throw new RuntimeException("Item is not available");
-        }
+                .orElseThrow(() -> new NotFoundException("Item not found"));
 
         if (item.getOwner().getId().equals(userId)) {
-            throw new RuntimeException("Owner cannot book own item");
+            throw new ConflictException("Owner cannot book own item");
+        }
+
+        if (!item.getAvailable()) {
+            throw new ValidationException("Item is not available");
         }
 
         if (dto.getStart() == null
                 || dto.getEnd() == null
                 || !dto.getStart().isBefore(dto.getEnd())
-                || dto.getStart().isBefore(java.time.LocalDateTime.now())) {
-            throw new RuntimeException("Invalid dates");
+                || dto.getStart().isBefore(LocalDateTime.now())) {
+            throw new ValidationException("Invalid dates");
         }
 
         Booking booking = new Booking();
@@ -59,49 +55,49 @@ public class BookingServiceImpl implements BookingService {
         booking.setEnd(dto.getEnd());
         booking.setStatus(BookingStatus.WAITING);
 
-        booking = bookingRepository.save(booking);
-
-        return bookingMapper.toDto(booking);
+        return bookingMapper.toDto(bookingRepository.save(booking));
     }
-
 
     @Override
     public BookingDto approve(Long userId, Long bookingId, boolean approved) {
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new RuntimeException("Only owner can approve");
+            throw new AccessException("Only owner can approve");
         }
 
-        booking.setStatus(
-                approved ? BookingStatus.APPROVED : BookingStatus.REJECTED
-        );
+        if (!booking.getStatus().equals(BookingStatus.WAITING)) {
+            throw new ConflictException("Booking already processed");
+        }
+
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
 
         return bookingMapper.toDto(bookingRepository.save(booking));
     }
 
     @Override
-
     public BookingDto getById(Long userId, Long bookingId) {
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
 
         boolean isOwner = booking.getItem().getOwner().getId().equals(userId);
         boolean isBooker = booking.getBooker().getId().equals(userId);
 
         if (!isOwner && !isBooker) {
-            throw new RuntimeException("Access denied");
+            throw new AccessException("Access denied");
         }
 
         return bookingMapper.toDto(booking);
     }
 
-
     @Override
     public List<BookingDto> getUserBookings(Long userId, BookingState state) {
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         List<Booking> bookings;
 
@@ -134,8 +130,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-
     public List<BookingDto> getOwnerBookings(Long userId, BookingState state) {
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         List<Booking> bookings;
 
