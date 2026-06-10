@@ -27,11 +27,9 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto create(Long userId, BookingCreateDto dto) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        Item item = itemRepository.findById(dto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+        User user = getUser(userId);
+        Item item = getItem(dto.getItemId());
 
         if (item.getOwner().getId().equals(userId)) {
             throw new ConflictException("Owner cannot book own item");
@@ -48,12 +46,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Invalid dates");
         }
 
-        Booking booking = new Booking();
-        booking.setBooker(user);
-        booking.setItem(item);
-        booking.setStart(dto.getStart());
-        booking.setEnd(dto.getEnd());
-        booking.setStatus(BookingStatus.WAITING);
+        Booking booking = bookingMapper.toEntity(dto, user, item);
 
         return bookingMapper.toDto(bookingRepository.save(booking));
     }
@@ -61,8 +54,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto approve(Long userId, Long bookingId, boolean approved) {
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Booking not found"));
+        Booking booking = getBooking(bookingId);
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
             throw new AccessException("Only owner can approve");
@@ -80,8 +72,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto getById(Long userId, Long bookingId) {
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Booking not found"));
+        Booking booking = getBooking(bookingId);
 
         boolean isOwner = booking.getItem().getOwner().getId().equals(userId);
         boolean isBooker = booking.getBooker().getId().equals(userId);
@@ -96,8 +87,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDto> getUserBookings(Long userId, BookingState state) {
 
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        getUser(userId);
 
         List<Booking> bookings;
 
@@ -132,9 +122,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDto> getOwnerBookings(Long userId, BookingState state) {
 
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
+        getUser(userId);
         List<Booking> bookings;
 
         switch (state) {
@@ -163,5 +151,20 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream()
                 .map(bookingMapper::toDto)
                 .toList();
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with id=" + userId));
+    }
+
+    private Item getItem(Long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Item not found with id=" + itemId));
+    }
+
+    private Booking getBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Booking not found with id=" + bookingId));
     }
 }
