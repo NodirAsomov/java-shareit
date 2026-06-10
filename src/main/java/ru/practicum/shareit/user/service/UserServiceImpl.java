@@ -5,33 +5,31 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
-import ru.practicum.shareit.user.storage.UserStorage;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserStorage storage;
+    private final UserRepository userRepository;
 
     private User getUserOrThrow(Long id) {
-        User user = storage.get(id);
-        if (user == null) {
-            throw new NotFoundException("User with id=" + id + " not found");
-        }
-        return user;
+        return userRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException("User with id=" + id + " not found"));
     }
 
     @Override
     public UserDto create(UserDto dto) {
 
-        if (storage.emailExists(dto.getEmail())) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new ConflictException("Email exists");
         }
 
         User user = UserMapper.toUser(dto);
-        return UserMapper.toDto(storage.create(user));
+        return UserMapper.toDto(userRepository.save(user));
     }
 
     @Override
@@ -39,8 +37,8 @@ public class UserServiceImpl implements UserService {
 
         User user = getUserOrThrow(id);
 
-        if (dto.getEmail() != null
-                && storage.emailExistsForOtherUser(dto.getEmail(), id)) {
+        if (dto.getEmail() != null &&
+                userRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new ConflictException("Email exists");
         }
 
@@ -52,7 +50,7 @@ public class UserServiceImpl implements UserService {
             user.setEmail(dto.getEmail());
         }
 
-        return UserMapper.toDto(storage.update(user));
+        return UserMapper.toDto(userRepository.save(user));
     }
 
     @Override
@@ -63,6 +61,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(Long id) {
         getUserOrThrow(id);
-        storage.delete(id);
+        userRepository.deleteById(id);
     }
 }
