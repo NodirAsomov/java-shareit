@@ -54,4 +54,16 @@ public class ErrorHandler {
     public Map<String, String> handleConstraint(jakarta.validation.ConstraintViolationException e) {
         return Map.of("error", e.getMessage());
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleIllegalArgument(IllegalArgumentException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleOther(Exception e) {
+        return Map.of("error", e.getMessage());
+    }
 }

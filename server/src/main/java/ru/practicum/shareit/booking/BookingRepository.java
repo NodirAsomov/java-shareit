@@ -5,18 +5,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-
     List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
 
     List<Booking> findByBookerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
-
 
     @Query("""
                 select b from Booking b
@@ -27,7 +23,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<Booking> findCurrentByBooker(Long bookerId);
 
-
     @Query("""
                 select b from Booking b
                 where b.booker.id = :bookerId
@@ -35,7 +30,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 order by b.start desc
             """)
     List<Booking> findPastByBooker(Long bookerId);
-
 
     @Query("""
                 select b from Booking b
@@ -50,7 +44,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByItemOwnerIdAndStatusOrderByStartDesc(Long ownerId, BookingStatus status);
 
-
     @Query("""
                 select b from Booking b
                 where b.item.owner.id = :ownerId
@@ -60,7 +53,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<Booking> findCurrentByOwner(Long ownerId);
 
-
     @Query("""
                 select b from Booking b
                 where b.item.owner.id = :ownerId
@@ -68,7 +60,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 order by b.start desc
             """)
     List<Booking> findPastByOwner(Long ownerId);
-
 
     @Query("""
                 select b from Booking b
@@ -83,12 +74,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             Long itemId,
             Long bookerId,
             BookingStatus status,
-            LocalDateTime end
+            java.time.LocalDateTime end
     );
-
-    List<Booking> findByItemIdAndEndBeforeOrderByEndDesc(Long itemId, LocalDateTime time);
-
-    List<Booking> findByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime time);
 
     List<Booking> findByItemIdInAndStatusOrderByStartAsc(
             List<Long> itemIds,
