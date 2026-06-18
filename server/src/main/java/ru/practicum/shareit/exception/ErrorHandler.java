@@ -1,18 +1,13 @@
 package ru.practicum.shareit.exception;
 
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
-
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
-
-
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-
 
 @RestControllerAdvice
 public class ErrorHandler {
@@ -41,7 +36,6 @@ public class ErrorHandler {
         return Map.of("error", e.getMessage());
     }
 
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidation(MethodArgumentNotValidException e) {
@@ -55,16 +49,9 @@ public class ErrorHandler {
         return Map.of("error", message);
     }
 
-
-    @ExceptionHandler(ConstraintViolationException.class)
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleConstraint(ConstraintViolationException e) {
-        return Map.of("error", e.getMessage());
-    }
-
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleOther(Exception e) {
+    public Map<String, String> handleConstraint(jakarta.validation.ConstraintViolationException e) {
         return Map.of("error", e.getMessage());
     }
 }

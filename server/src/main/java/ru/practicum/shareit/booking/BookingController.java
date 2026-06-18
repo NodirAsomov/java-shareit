@@ -6,6 +6,7 @@ import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.service.BookingService;
 
+
 import java.util.List;
 
 @RestController
@@ -35,14 +36,34 @@ public class BookingController {
     }
 
     @GetMapping
-    public List<BookingDto> getUserBookings(@RequestParam(defaultValue = "ALL") BookingState state,
-                                            @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return bookingService.getUserBookings(userId, state);
+    public List<BookingDto> getUserBookings(
+            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @RequestParam(defaultValue = "all") String state) {
+
+        BookingState bookingState;
+
+        try {
+            bookingState = BookingState.valueOf(state.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown state: " + state);
+        }
+
+        return bookingService.getUserBookings(userId, bookingState);
     }
 
     @GetMapping("/owner")
-    public List<BookingDto> getOwnerBookings(@RequestParam(defaultValue = "ALL") BookingState state,
-                                             @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return bookingService.getOwnerBookings(userId, state);
+    public List<BookingDto> getOwnerBookings(
+            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @RequestParam(defaultValue = "all") String state) {
+
+        BookingState bookingState;
+
+        try {
+            bookingState = BookingState.valueOf(state.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown state: " + state);
+        }
+
+        return bookingService.getOwnerBookings(userId, bookingState);
     }
 }
