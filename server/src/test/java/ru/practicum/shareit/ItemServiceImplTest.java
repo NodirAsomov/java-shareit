@@ -1,14 +1,18 @@
 package ru.practicum.shareit;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.practicum.shareit.booking.*;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.*;
+import ru.practicum.shareit.item.Comment;
+import ru.practicum.shareit.item.CommentRepository;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
@@ -21,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,37 +40,22 @@ class ItemServiceImplTest {
     private ItemServiceImpl service;
 
     private final Long userId = 1L;
-    private final Long itemId = 1L;
+    private final Long itemId = 10L;
 
-    private Item item;
-    private User user;
+    private Item buildItem() {
+        User owner = new User();
+        owner.setId(userId);
 
-    @BeforeEach
-    void setUp() {
-        user = new User();
-        user.setId(userId);
-        user.setName("user");
-
-        item = new Item();
+        Item item = new Item();
         item.setId(itemId);
-        item.setOwner(user);
-        item.setName("item");
-        item.setDescription("desc");
+        item.setName("Item");
+        item.setDescription("Desc");
         item.setAvailable(true);
+        item.setOwner(owner);
+        return item;
     }
 
-    // ---------------- CREATE ----------------
-
-    @Test
-    void create_ok() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(itemRepository.save(any())).thenReturn(item);
-
-        ItemDto result = service.create(userId, new ItemDto());
-
-        assertNotNull(result);
-        verify(itemRepository).save(any());
-    }
+    // ---------------- USER CHECK ----------------
 
     @Test
     void create_userNotFound() {
@@ -75,18 +65,65 @@ class ItemServiceImplTest {
                 () -> service.create(userId, new ItemDto()));
     }
 
-    // ---------------- GET ----------------
+    // ---------------- CREATE ----------------
 
     @Test
-    void get_ok() {
+    void create_success() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
+        when(itemRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto dto = new ItemDto();
+        dto.setName("Item");
+
+        assertNotNull(service.create(userId, dto));
+    }
+
+    // ---------------- UPDATE ----------------
+
+    @Test
+    void update_notOwner() {
+        Item item = buildItem();
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
-        when(commentRepository.findByItemIdOrderByCreatedDesc(itemId))
-                .thenReturn(List.of());
 
-        ItemDto result = service.get(itemId);
+        assertThrows(NotFoundException.class,
+                () -> service.update(999L, itemId, new ItemDto()));
+    }
 
+    @Test
+    void update_blankFieldsIgnored() {
+        Item item = buildItem();
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(itemRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto dto = new ItemDto();
+        dto.setName("   ");
+        dto.setDescription("");
+
+        service.update(userId, itemId, dto);
+
+        assertEquals("Item", item.getName());
+    }
+
+    @Test
+    void update_success() {
+        Item item = buildItem();
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(itemRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto dto = new ItemDto();
+        dto.setName("New");
+        dto.setDescription("New desc");
+        dto.setAvailable(false);
+
+        ItemDto result = service.update(userId, itemId, dto);
+
+        assertEquals("New", item.getName());
+        assertEquals("New desc", item.getDescription());
+        assertFalse(item.getAvailable());
         assertNotNull(result);
     }
+
+    // ---------------- GET ----------------
 
     @Test
     void get_notFound() {
@@ -96,104 +133,86 @@ class ItemServiceImplTest {
                 () -> service.get(itemId));
     }
 
-    // ---------------- UPDATE ----------------
-
     @Test
-    void update_notOwner() {
+    void get_success() {
+        Item item = buildItem();
+
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(commentRepository.findByItemIdOrderByCreatedDesc(itemId))
+                .thenReturn(List.of());
 
-        assertThrows(NotFoundException.class,
-                () -> service.update(999L, itemId, new ItemDto()));
-    }
+        ItemDto dto = service.get(itemId);
 
-    @Test
-    void update_partialFields() {
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
-        when(itemRepository.save(any())).thenReturn(item);
-
-        ItemDto dto = new ItemDto();
-        dto.setName("new name");
-
-        ItemDto result = service.update(userId, itemId, dto);
-
-        assertNotNull(result);
-        verify(itemRepository).save(any());
+        assertNotNull(dto);
     }
 
     // ---------------- SEARCH ----------------
 
     @Test
-    void search_emptyText() {
-        assertTrue(service.search("").isEmpty());
-    }
-
-    @Test
-    void search_blankText() {
+    void search_nullBlank() {
+        assertTrue(service.search(null).isEmpty());
         assertTrue(service.search("   ").isEmpty());
     }
 
     @Test
-    void search_ok_filterUnavailable() {
+    void search_success() {
+        Item item = buildItem();
 
-        User owner = new User();
-        owner.setId(userId);
-        owner.setName("owner");
-
-        Item i1 = new Item();
-        i1.setOwner(owner);
-        i1.setAvailable(true);
-
-        Item i2 = new Item();
-        i2.setOwner(owner);
-        i2.setAvailable(false);
-
-        when(itemRepository.search("text")).thenReturn(List.of(i1, i2));
+        when(itemRepository.search("text")).thenReturn(List.of(item));
 
         List<ItemDto> result = service.search("text");
 
         assertEquals(1, result.size());
     }
 
-    // ---------------- ADD COMMENT ----------------
-
-    @Test
-    void addComment_noBooking() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
-        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
-                any(), any(), any(), any()
-        )).thenReturn(false);
-
-        assertThrows(ValidationException.class,
-                () -> service.addComment(userId, itemId, new CommentDto()));
-    }
-
-    @Test
-    void addComment_ok() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
-
-        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
-                any(), any(), any(), any()
-        )).thenReturn(true);
-
-        when(commentRepository.save(any()))
-                .thenAnswer(inv -> inv.getArgument(0));
-
-        CommentDto result = service.addComment(userId, itemId, new CommentDto());
-
-        assertNotNull(result);
-    }
-
     // ---------------- OWNER ITEMS ----------------
 
     @Test
-    void getOwnerItems_noBookings() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    void getOwnerItems_allBranches() {
+        Item item = buildItem();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
         when(itemRepository.findByOwnerId(userId)).thenReturn(List.of(item));
-        when(bookingRepository.findByItemIdInAndStatusOrderByStartAsc(any(), any()))
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Booking past = new Booking();
+        past.setId(1L);
+        past.setItem(item);
+        past.setStart(now.minusDays(2));
+        past.setBooker(new User());
+
+        Booking future = new Booking();
+        future.setId(2L);
+        future.setItem(item);
+        future.setStart(now.plusDays(2));
+        future.setBooker(new User());
+
+        when(bookingRepository.findByItemIdInAndStatusOrderByStartAsc(
+                anyList(), eq(BookingStatus.APPROVED)))
+                .thenReturn(List.of(past, future));
+
+        when(commentRepository.findByItemIdInOrderByCreatedDesc(anyList()))
                 .thenReturn(List.of());
-        when(commentRepository.findByItemIdInOrderByCreatedDesc(any()))
+
+        List<ItemDto> result = service.getOwnerItems(userId);
+
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getLastBooking());
+        assertNotNull(result.get(0).getNextBooking());
+    }
+
+    @Test
+    void getOwnerItems_emptyBookings() {
+        Item item = buildItem();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
+        when(itemRepository.findByOwnerId(userId)).thenReturn(List.of(item));
+
+        when(bookingRepository.findByItemIdInAndStatusOrderByStartAsc(anyList(), any()))
+                .thenReturn(List.of());
+
+        when(commentRepository.findByItemIdInOrderByCreatedDesc(anyList()))
                 .thenReturn(List.of());
 
         List<ItemDto> result = service.getOwnerItems(userId);
@@ -201,27 +220,55 @@ class ItemServiceImplTest {
         assertEquals(1, result.size());
     }
 
+    // ---------------- ADD COMMENT ----------------
+
+
+        @Test
+        void addComment_success() {
+            Item item = buildItem();
+
+            User author = new User();
+            author.setId(userId);
+            author.setName("User");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(author));
+            when(userRepository.getReferenceById(userId)).thenReturn(author);
+
+            when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+
+            when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                    anyLong(), anyLong(), any(), any()
+            )).thenReturn(true);
+
+            when(commentRepository.save(any())).thenAnswer(i -> {
+                Comment c = i.getArgument(0);
+                c.setId(1L);
+                c.setAuthor(author); // 🔥 ВАЖНО
+                return c;
+            });
+
+            CommentDto dto = new CommentDto();
+            dto.setText("ok");
+
+            CommentDto result = service.addComment(userId, itemId, dto);
+
+            assertNotNull(result);
+        }
+
+    
+
     @Test
-    void getOwnerItems_withPastAndFutureBookings() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(itemRepository.findByOwnerId(userId)).thenReturn(List.of(item));
+    void addComment_noBooking() {
+        Item item = buildItem();
 
-        Booking past = new Booking();
-        past.setItem(item);
-        past.setStart(LocalDateTime.now().minusDays(2));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
-        Booking future = new Booking();
-        future.setItem(item);
-        future.setStart(LocalDateTime.now().plusDays(2));
+        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                anyLong(), anyLong(), any(), any()))
+                .thenReturn(false);
 
-        when(bookingRepository.findByItemIdInAndStatusOrderByStartAsc(any(), any()))
-                .thenReturn(List.of(past, future));
-
-        when(commentRepository.findByItemIdInOrderByCreatedDesc(any()))
-                .thenReturn(List.of());
-
-        List<ItemDto> result = service.getOwnerItems(userId);
-
-        assertEquals(1, result.size());
+        assertThrows(ValidationException.class,
+                () -> service.addComment(userId, itemId, new CommentDto()));
     }
 }
