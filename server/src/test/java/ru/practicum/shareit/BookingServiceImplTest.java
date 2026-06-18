@@ -25,19 +25,25 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
 
-    @Mock BookingRepository bookingRepository;
-    @Mock ItemRepository itemRepository;
-    @Mock UserRepository userRepository;
-    @Mock BookingMapper bookingMapper;
+    @Mock
+    BookingRepository bookingRepository;
+    @Mock
+    ItemRepository itemRepository;
+    @Mock
+    UserRepository userRepository;
+    @Mock
+    BookingMapper bookingMapper;
 
-    @InjectMocks BookingServiceImpl service;
+    @InjectMocks
+    BookingServiceImpl service;
 
-    // ---------- CREATE ----------
 
     @Test
     void create_success() {
-        User user = new User(); user.setId(1L);
-        User owner = new User(); owner.setId(2L);
+        User user = new User();
+        user.setId(1L);
+        User owner = new User();
+        owner.setId(2L);
 
         Item item = new Item();
         item.setId(10L);
@@ -63,7 +69,8 @@ class BookingServiceImplTest {
 
     @Test
     void create_ownerCannotBook() {
-        User owner = new User(); owner.setId(1L);
+        User owner = new User();
+        owner.setId(1L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -83,8 +90,10 @@ class BookingServiceImplTest {
 
     @Test
     void create_invalidDates() {
-        User user = new User(); user.setId(1L);
-        User owner = new User(); owner.setId(2L);
+        User user = new User();
+        user.setId(1L);
+        User owner = new User();
+        owner.setId(2L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -102,11 +111,11 @@ class BookingServiceImplTest {
                 () -> service.create(1L, dto));
     }
 
-    // ---------- APPROVE ----------
 
     @Test
     void approve_success() {
-        User owner = new User(); owner.setId(1L);
+        User owner = new User();
+        owner.setId(1L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -124,7 +133,8 @@ class BookingServiceImplTest {
 
     @Test
     void approve_notOwner() {
-        User owner = new User(); owner.setId(2L);
+        User owner = new User();
+        owner.setId(2L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -141,7 +151,8 @@ class BookingServiceImplTest {
 
     @Test
     void approve_alreadyProcessed() {
-        User owner = new User(); owner.setId(1L);
+        User owner = new User();
+        owner.setId(1L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -156,12 +167,13 @@ class BookingServiceImplTest {
                 () -> service.approve(1L, 5L, true));
     }
 
-    // ---------- GET BY ID ----------
 
     @Test
     void getById_accessDenied() {
-        User owner = new User(); owner.setId(2L);
-        User booker = new User(); booker.setId(3L);
+        User owner = new User();
+        owner.setId(2L);
+        User booker = new User();
+        booker.setId(3L);
 
         Item item = new Item();
         item.setOwner(owner);
@@ -178,12 +190,14 @@ class BookingServiceImplTest {
 
     @Test
     void getById_success_owner() {
-        User owner = new User(); owner.setId(1L);
+        User owner = new User();
+        owner.setId(1L);
 
         Item item = new Item();
         item.setOwner(owner);
 
-        User booker = new User(); booker.setId(2L);
+        User booker = new User();
+        booker.setId(2L);
 
         Booking booking = new Booking();
         booking.setItem(item);
@@ -195,11 +209,11 @@ class BookingServiceImplTest {
         assertNotNull(service.getById(1L, 7L));
     }
 
-    // ---------- USER BOOKINGS (ALL STATES) ----------
 
     @Test
     void userBookings_all() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByBookerIdOrderByStartDesc(1L)).thenReturn(List.of());
@@ -209,7 +223,8 @@ class BookingServiceImplTest {
 
     @Test
     void userBookings_current() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findCurrentByBooker(1L)).thenReturn(List.of());
@@ -219,7 +234,8 @@ class BookingServiceImplTest {
 
     @Test
     void userBookings_past() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findPastByBooker(1L)).thenReturn(List.of());
@@ -229,7 +245,8 @@ class BookingServiceImplTest {
 
     @Test
     void userBookings_future() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findFutureByBooker(1L)).thenReturn(List.of());
@@ -239,7 +256,8 @@ class BookingServiceImplTest {
 
     @Test
     void userBookings_waiting() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(
@@ -250,7 +268,8 @@ class BookingServiceImplTest {
 
     @Test
     void userBookings_rejected() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(
@@ -259,11 +278,11 @@ class BookingServiceImplTest {
         assertNotNull(service.getUserBookings(1L, BookingState.REJECTED));
     }
 
-    // ---------- OWNER BOOKINGS ----------
 
     @Test
     void ownerBookings_all() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByItemOwnerIdOrderByStartDesc(1L)).thenReturn(List.of());
@@ -273,7 +292,8 @@ class BookingServiceImplTest {
 
     @Test
     void ownerBookings_current() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findCurrentByOwner(1L)).thenReturn(List.of());
@@ -283,7 +303,8 @@ class BookingServiceImplTest {
 
     @Test
     void ownerBookings_past() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findPastByOwner(1L)).thenReturn(List.of());
@@ -293,7 +314,8 @@ class BookingServiceImplTest {
 
     @Test
     void ownerBookings_future() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findFutureByOwner(1L)).thenReturn(List.of());
@@ -303,7 +325,8 @@ class BookingServiceImplTest {
 
     @Test
     void ownerBookings_waiting() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(
@@ -314,7 +337,8 @@ class BookingServiceImplTest {
 
     @Test
     void ownerBookings_rejected() {
-        User user = new User(); user.setId(1L);
+        User user = new User();
+        user.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(

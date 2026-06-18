@@ -31,10 +31,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
 
-    @Mock private ItemRepository itemRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private CommentRepository commentRepository;
-    @Mock private BookingRepository bookingRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private CommentRepository commentRepository;
+    @Mock
+    private BookingRepository bookingRepository;
 
     @InjectMocks
     private ItemServiceImpl service;
@@ -55,7 +59,6 @@ class ItemServiceImplTest {
         return item;
     }
 
-    // ---------------- USER CHECK ----------------
 
     @Test
     void create_userNotFound() {
@@ -65,7 +68,6 @@ class ItemServiceImplTest {
                 () -> service.create(userId, new ItemDto()));
     }
 
-    // ---------------- CREATE ----------------
 
     @Test
     void create_success() {
@@ -78,7 +80,6 @@ class ItemServiceImplTest {
         assertNotNull(service.create(userId, dto));
     }
 
-    // ---------------- UPDATE ----------------
 
     @Test
     void update_notOwner() {
@@ -123,7 +124,6 @@ class ItemServiceImplTest {
         assertNotNull(result);
     }
 
-    // ---------------- GET ----------------
 
     @Test
     void get_notFound() {
@@ -146,7 +146,6 @@ class ItemServiceImplTest {
         assertNotNull(dto);
     }
 
-    // ---------------- SEARCH ----------------
 
     @Test
     void search_nullBlank() {
@@ -165,7 +164,6 @@ class ItemServiceImplTest {
         assertEquals(1, result.size());
     }
 
-    // ---------------- OWNER ITEMS ----------------
 
     @Test
     void getOwnerItems_allBranches() {
@@ -220,42 +218,39 @@ class ItemServiceImplTest {
         assertEquals(1, result.size());
     }
 
-    // ---------------- ADD COMMENT ----------------
 
+    @Test
+    void addComment_success() {
+        Item item = buildItem();
 
-        @Test
-        void addComment_success() {
-            Item item = buildItem();
+        User author = new User();
+        author.setId(userId);
+        author.setName("User");
 
-            User author = new User();
-            author.setId(userId);
-            author.setName("User");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(author));
+        when(userRepository.getReferenceById(userId)).thenReturn(author);
 
-            when(userRepository.findById(userId)).thenReturn(Optional.of(author));
-            when(userRepository.getReferenceById(userId)).thenReturn(author);
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
-            when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                anyLong(), anyLong(), any(), any()
+        )).thenReturn(true);
 
-            when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
-                    anyLong(), anyLong(), any(), any()
-            )).thenReturn(true);
+        when(commentRepository.save(any())).thenAnswer(i -> {
+            Comment c = i.getArgument(0);
+            c.setId(1L);
+            c.setAuthor(author);
+            return c;
+        });
 
-            when(commentRepository.save(any())).thenAnswer(i -> {
-                Comment c = i.getArgument(0);
-                c.setId(1L);
-                c.setAuthor(author); // 🔥 ВАЖНО
-                return c;
-            });
+        CommentDto dto = new CommentDto();
+        dto.setText("ok");
 
-            CommentDto dto = new CommentDto();
-            dto.setText("ok");
+        CommentDto result = service.addComment(userId, itemId, dto);
 
-            CommentDto result = service.addComment(userId, itemId, dto);
+        assertNotNull(result);
+    }
 
-            assertNotNull(result);
-        }
-
-    
 
     @Test
     void addComment_noBooking() {
