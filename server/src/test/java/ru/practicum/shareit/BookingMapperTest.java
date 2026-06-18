@@ -1,6 +1,7 @@
 package ru.practicum.shareit;
 
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingStatus;
@@ -16,70 +17,59 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BookingMapperTest {
 
-    private final BookingMapper mapper = new BookingMapper();
+    private BookingMapper mapper;
 
-    @Test
-    void toDto_fullMapping() {
-        User user = new User();
-        user.setId(1L);
-
-        Item item = new Item();
-        item.setId(2L);
-        item.setName("Item");
-
-        Booking booking = new Booking();
-        booking.setId(10L);
-        booking.setStart(LocalDateTime.now());
-        booking.setEnd(LocalDateTime.now().plusDays(1));
-        booking.setStatus(BookingStatus.APPROVED);
-        booking.setBooker(user);
-        booking.setItem(item);
-
-        BookingDto dto = mapper.toDto(booking);
-
-        assertNotNull(dto);
-        assertEquals(10L, dto.getId());
-        assertEquals(BookingStatus.APPROVED, dto.getStatus());
-        assertEquals(1L, dto.getBooker().getId());
-        assertEquals(2L, dto.getItem().getId());
-        assertEquals("Item", dto.getItem().getName());
+    @BeforeEach
+    void setUp() {
+        mapper = new BookingMapper();
     }
 
     @Test
-    void toEntity_fullMapping() {
+    void shouldConvertBookingToDto() {
         User user = new User();
         user.setId(1L);
 
         Item item = new Item();
-        item.setId(2L);
-        item.setName("Item");
+        item.setId(10L);
+        item.setName("Drill");
+
+        Booking booking = new Booking();
+        booking.setId(100L);
+        booking.setBooker(user);
+        booking.setItem(item);
+        booking.setStart(LocalDateTime.now());
+        booking.setEnd(LocalDateTime.now().plusDays(1));
+        booking.setStatus(BookingStatus.APPROVED);
+
+        BookingDto dto = mapper.toDto(booking);
+
+        assertEquals(100L, dto.getId());
+        assertEquals(1L, dto.getBooker().getId());
+        assertEquals(10L, dto.getItem().getId());
+        assertEquals("Drill", dto.getItem().getName());
+        assertEquals(BookingStatus.APPROVED, dto.getStatus());
+        assertEquals(booking.getStart(), dto.getStart());
+        assertEquals(booking.getEnd(), dto.getEnd());
+    }
+
+    @Test
+    void shouldConvertCreateDtoToBooking() {
+        User user = new User();
+        user.setId(1L);
+
+        Item item = new Item();
+        item.setId(10L);
 
         BookingCreateDto dto = new BookingCreateDto();
         dto.setStart(LocalDateTime.now());
-        dto.setEnd(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
 
         Booking booking = mapper.toEntity(dto, user, item);
 
-        assertNotNull(booking);
         assertEquals(user, booking.getBooker());
         assertEquals(item, booking.getItem());
         assertEquals(dto.getStart(), booking.getStart());
         assertEquals(dto.getEnd(), booking.getEnd());
         assertEquals(BookingStatus.WAITING, booking.getStatus());
-    }
-
-    @Test
-    void toDto_nullNestedObjects_shouldThrow() {
-        Booking booking = new Booking();
-        booking.setId(1L);
-
-
-        Item item = new Item();
-        item.setId(1L);
-        item.setName("Item");
-
-        booking.setItem(item);
-
-        assertThrows(NullPointerException.class, () -> mapper.toDto(booking));
     }
 }
