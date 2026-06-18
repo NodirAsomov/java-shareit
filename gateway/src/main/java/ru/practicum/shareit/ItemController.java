@@ -3,6 +3,7 @@ package ru.practicum.shareit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.booking.dto.ItemDto;
 import ru.practicum.shareit.client.ItemClient;
 
 @RestController
@@ -15,7 +16,7 @@ public class ItemController {
     @PostMapping
     public ResponseEntity<Object> create(
             @RequestHeader("X-Sharer-User-Id") Long userId,
-            @RequestBody Object dto) {
+            @RequestBody ItemDto dto) {
 
         return client.create(userId, dto);
     }
@@ -26,5 +27,21 @@ public class ItemController {
             @PathVariable Long id) {
 
         return client.get(userId, id);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<Object> update(
+            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @PathVariable Long id,
+            @RequestBody ItemDto dto) {
+
+        return client.update(userId, id, dto);
+    }
+
+    @GetMapping
+    public ResponseEntity<Object> getAll(
+            @RequestHeader("X-Sharer-User-Id") Long userId) {
+
+        return client.getAll(userId);
     }
 }
