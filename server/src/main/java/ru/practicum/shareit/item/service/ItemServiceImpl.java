@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -63,12 +64,17 @@ public class ItemServiceImpl implements ItemService {
                 .build();
     }
 
+
     @Override
     public ItemDto create(Long userId, ItemDto dto) {
 
         checkUserExists(userId);
 
-        Item item = ItemMapper.toItem(dto, userId);
+        User owner = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Item item = ItemMapper.toItem(dto, owner);
+
         return ItemMapper.toDto(itemRepository.save(item));
     }
 
