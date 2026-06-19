@@ -1,7 +1,6 @@
 package ru.practicum.shareit;
 
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingStatus;
@@ -15,8 +14,6 @@ import ru.practicum.shareit.user.User;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-
 
 
 class BookingMapperTest {

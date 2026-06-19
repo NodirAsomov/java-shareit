@@ -25,12 +25,17 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
 
-    @Mock ItemRepository itemRepository;
-    @Mock UserRepository userRepository;
-    @Mock CommentRepository commentRepository;
-    @Mock BookingRepository bookingRepository;
+    @Mock
+    ItemRepository itemRepository;
+    @Mock
+    UserRepository userRepository;
+    @Mock
+    CommentRepository commentRepository;
+    @Mock
+    BookingRepository bookingRepository;
 
-    @InjectMocks ItemServiceImpl service;
+    @InjectMocks
+    ItemServiceImpl service;
 
     User user;
     User otherUser;
@@ -184,6 +189,7 @@ class ItemServiceImplTest {
 
         assertTrue(result.isEmpty());
     }
+
     @Test
     void getOwnerItems_with_bookings_and_comments() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));

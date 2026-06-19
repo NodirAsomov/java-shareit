@@ -1,14 +1,11 @@
 package ru.practicum.shareit;
 
 
-
-
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import ru.practicum.shareit.exception.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
 
 
 class ErrorHandlerTest {

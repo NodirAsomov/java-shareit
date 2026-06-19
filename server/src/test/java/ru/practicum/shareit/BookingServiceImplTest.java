@@ -34,11 +34,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
 
-    @Mock BookingRepository bookingRepository;
-    @Mock ItemRepository itemRepository;
-    @Mock UserRepository userRepository;
+    @Mock
+    BookingRepository bookingRepository;
+    @Mock
+    ItemRepository itemRepository;
+    @Mock
+    UserRepository userRepository;
 
-    @InjectMocks BookingServiceImpl service;
+    @InjectMocks
+    BookingServiceImpl service;
 
     User user;
     User owner;
