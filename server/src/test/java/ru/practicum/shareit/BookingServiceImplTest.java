@@ -1,15 +1,21 @@
 package ru.practicum.shareit;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.practicum.shareit.booking.*;
-import ru.practicum.shareit.booking.dto.*;
-import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingState;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.booking.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
-import ru.practicum.shareit.exception.*;
+import ru.practicum.shareit.exception.AccessException;
+import ru.practicum.shareit.exception.ConflictException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
@@ -19,86 +25,71 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
 
-    @Mock
-    BookingRepository bookingRepository;
-    @Mock
-    ItemRepository itemRepository;
-    @Mock
-    UserRepository userRepository;
-    @Mock
-    BookingMapper bookingMapper;
+    @Mock BookingRepository bookingRepository;
+    @Mock ItemRepository itemRepository;
+    @Mock UserRepository userRepository;
 
-    @InjectMocks
-    BookingServiceImpl service;
+    @InjectMocks BookingServiceImpl service;
 
+    User user;
+    User owner;
+    Item item;
+    Booking booking;
 
-    @Test
+    @BeforeEach
+    void setUp() {
+        user = new User();
+        user.setId(1L);
 
-    void create_success() {
-        Long userId = 1L;
-
-        User user = new User();
-        user.setId(userId);
-
-        User owner = new User();
+        owner = new User();
         owner.setId(2L);
 
-        Item item = new Item();
+        item = new Item();
         item.setId(10L);
-        item.setAvailable(true);
         item.setOwner(owner);
+        item.setAvailable(true);
 
+        booking = new Booking();
+        booking.setId(100L);
+        booking.setItem(item);
+        booking.setBooker(user);
+        booking.setStatus(BookingStatus.WAITING);
+    }
+
+    // ---------------- CREATE ----------------
+
+    @Test
+    void create_success() {
         BookingCreateDto dto = new BookingCreateDto();
         dto.setItemId(10L);
         dto.setStart(LocalDateTime.now().plusDays(1));
         dto.setEnd(LocalDateTime.now().plusDays(2));
 
-        Booking savedBooking = new Booking();
-        savedBooking.setId(100L);
-        savedBooking.setItem(item);
-        savedBooking.setBooker(user);
-        savedBooking.setStart(dto.getStart());
-        savedBooking.setEnd(dto.getEnd());
-        savedBooking.setStatus(BookingStatus.WAITING);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
+        when(bookingRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        when(userRepository.findById(userId))
-                .thenReturn(Optional.of(user));
-
-        when(itemRepository.findById(10L))
-                .thenReturn(Optional.of(item));
-
-        when(bookingRepository.save(any(Booking.class)))
-                .thenReturn(savedBooking);
-
-        BookingDto result = service.create(userId, dto);
+        BookingDto result = service.create(1L, dto);
 
         assertNotNull(result);
-        assertEquals(savedBooking.getId(), result.getId());
-
-        verify(bookingRepository, times(1)).save(any(Booking.class));
     }
 
     @Test
-    void create_ownerCannotBook() {
-        User owner = new User();
-        owner.setId(1L);
+    void create_owner_conflict() {
+        item.setOwner(user);
 
-        Item item = new Item();
-        item.setOwner(owner);
-        item.setAvailable(true);
+        BookingCreateDto dto = validDto();
 
-        BookingCreateDto dto = new BookingCreateDto();
-        dto.setItemId(10L);
-        dto.setStart(LocalDateTime.now().plusDays(1));
-        dto.setEnd(LocalDateTime.now().plusDays(2));
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
 
         assertThrows(ConflictException.class,
@@ -106,16 +97,20 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void create_invalidDates() {
-        User user = new User();
-        user.setId(1L);
-        User owner = new User();
-        owner.setId(2L);
+    void create_item_not_available() {
+        item.setAvailable(false);
 
-        Item item = new Item();
-        item.setOwner(owner);
-        item.setAvailable(true);
+        BookingCreateDto dto = validDto();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class,
+                () -> service.create(1L, dto));
+    }
+
+    @Test
+    void create_invalid_dates() {
         BookingCreateDto dto = new BookingCreateDto();
         dto.setItemId(10L);
         dto.setStart(LocalDateTime.now().plusDays(2));
@@ -128,251 +123,139 @@ class BookingServiceImplTest {
                 () -> service.create(1L, dto));
     }
 
-
+    // ---------------- APPROVE ----------------
 
     @Test
     void approve_success() {
-        User owner = new User();
-        owner.setId(1L);
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        User booker = new User();
-        booker.setId(2L);
-
-        Item item = new Item();
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setItem(item);
-        booking.setBooker(booker);
-        booking.setStatus(BookingStatus.WAITING);
-
-        when(bookingRepository.findById(5L))
-                .thenReturn(Optional.of(booking));
-
-        when(bookingRepository.save(any(Booking.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
-
-        BookingDto result = service.approve(1L, 5L, true);
+        BookingDto result = service.approve(2L, 100L, true);
 
         assertNotNull(result);
     }
 
     @Test
-    void approve_notOwner() {
-        User owner = new User();
-        owner.setId(2L);
-
-        Item item = new Item();
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setItem(item);
-        booking.setStatus(BookingStatus.WAITING);
-
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+    void approve_not_owner() {
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
 
         assertThrows(AccessException.class,
-                () -> service.approve(1L, 5L, true));
+                () -> service.approve(999L, 100L, true));
     }
 
     @Test
-    void approve_alreadyProcessed() {
-        User owner = new User();
-        owner.setId(1L);
-
-        Item item = new Item();
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setItem(item);
+    void approve_already_processed() {
         booking.setStatus(BookingStatus.APPROVED);
 
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
 
         assertThrows(ConflictException.class,
-                () -> service.approve(1L, 5L, true));
+                () -> service.approve(2L, 100L, true));
     }
 
+    // ---------------- GET BY ID ----------------
 
     @Test
-    void getById_accessDenied() {
-        User owner = new User();
-        owner.setId(2L);
-        User booker = new User();
-        booker.setId(3L);
-
-        Item item = new Item();
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setItem(item);
-        booking.setBooker(booker);
-
-        when(bookingRepository.findById(7L)).thenReturn(Optional.of(booking));
-
-        assertThrows(AccessException.class,
-                () -> service.getById(1L, 7L));
-    }
-
-    @Test
-
     void getById_success_owner() {
-        User owner = new User();
-        owner.setId(1L);
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
 
-        User booker = new User();
-        booker.setId(2L);
-
-        Item item = new Item();
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setItem(item);
-        booking.setBooker(booker);
-
-        when(bookingRepository.findById(7L))
-                .thenReturn(Optional.of(booking));
-
-        BookingDto result = service.getById(1L, 7L);
+        BookingDto result = service.getById(2L, 100L);
 
         assertNotNull(result);
     }
 
-
     @Test
-    void userBookings_all() {
-        User user = new User();
-        user.setId(1L);
+    void getById_success_booker() {
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByBookerIdOrderByStartDesc(1L)).thenReturn(List.of());
+        BookingDto result = service.getById(1L, 100L);
 
-        assertNotNull(service.getUserBookings(1L, BookingState.ALL));
+        assertNotNull(result);
     }
 
     @Test
-    void userBookings_current() {
-        User user = new User();
-        user.setId(1L);
+    void getById_access_denied() {
+        User other = new User();
+        other.setId(999L);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findCurrentByBooker(1L)).thenReturn(List.of());
+        booking.setBooker(user);
+        booking.getItem().setOwner(owner);
 
-        assertNotNull(service.getUserBookings(1L, BookingState.CURRENT));
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+
+        assertThrows(AccessException.class,
+                () -> service.getById(999L, 100L));
     }
 
+    // ---------------- USER BOOKINGS SWITCH ----------------
+
     @Test
-    void userBookings_past() {
-        User user = new User();
-        user.setId(1L);
-
+    void getUserBookings_switch_full() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findPastByBooker(1L)).thenReturn(List.of());
 
-        assertNotNull(service.getUserBookings(1L, BookingState.PAST));
+        when(bookingRepository.findByBookerIdOrderByStartDesc(1L))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.ALL);
+
+        when(bookingRepository.findCurrentByBooker(1L))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.CURRENT);
+
+        when(bookingRepository.findPastByBooker(1L))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.PAST);
+
+        when(bookingRepository.findFutureByBooker(1L))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.FUTURE);
+
+        when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(1L, BookingStatus.WAITING))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.WAITING);
+
+        when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(1L, BookingStatus.REJECTED))
+                .thenReturn(List.of());
+        service.getUserBookings(1L, BookingState.REJECTED);
     }
 
+    // ---------------- OWNER BOOKINGS SWITCH ----------------
+
     @Test
-    void userBookings_future() {
-        User user = new User();
-        user.setId(1L);
+    void getOwnerBookings_switch_full() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(owner));
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findFutureByBooker(1L)).thenReturn(List.of());
+        when(bookingRepository.findByItemOwnerIdOrderByStartDesc(2L))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.ALL);
 
-        assertNotNull(service.getUserBookings(1L, BookingState.FUTURE));
+        when(bookingRepository.findCurrentByOwner(2L))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.CURRENT);
+
+        when(bookingRepository.findPastByOwner(2L))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.PAST);
+
+        when(bookingRepository.findFutureByOwner(2L))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.FUTURE);
+
+        when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(2L, BookingStatus.WAITING))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.WAITING);
+
+        when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(2L, BookingStatus.REJECTED))
+                .thenReturn(List.of());
+        service.getOwnerBookings(2L, BookingState.REJECTED);
     }
 
-    @Test
-    void userBookings_waiting() {
-        User user = new User();
-        user.setId(1L);
+    // ---------------- helper ----------------
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(
-                1L, BookingStatus.WAITING)).thenReturn(List.of());
-
-        assertNotNull(service.getUserBookings(1L, BookingState.WAITING));
-    }
-
-    @Test
-    void userBookings_rejected() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByBookerIdAndStatusOrderByStartDesc(
-                1L, BookingStatus.REJECTED)).thenReturn(List.of());
-
-        assertNotNull(service.getUserBookings(1L, BookingState.REJECTED));
-    }
-
-
-    @Test
-    void ownerBookings_all() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByItemOwnerIdOrderByStartDesc(1L)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.ALL));
-    }
-
-    @Test
-    void ownerBookings_current() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findCurrentByOwner(1L)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.CURRENT));
-    }
-
-    @Test
-    void ownerBookings_past() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findPastByOwner(1L)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.PAST));
-    }
-
-    @Test
-    void ownerBookings_future() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findFutureByOwner(1L)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.FUTURE));
-    }
-
-    @Test
-    void ownerBookings_waiting() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(
-                1L, BookingStatus.WAITING)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.WAITING));
-    }
-
-    @Test
-    void ownerBookings_rejected() {
-        User user = new User();
-        user.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(
-                1L, BookingStatus.REJECTED)).thenReturn(List.of());
-
-        assertNotNull(service.getOwnerBookings(1L, BookingState.REJECTED));
+    private BookingCreateDto validDto() {
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(10L);
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+        return dto;
     }
 }

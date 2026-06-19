@@ -6,7 +6,10 @@ import ru.practicum.shareit.booking.*;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
-import ru.practicum.shareit.exception.*;
+import ru.practicum.shareit.exception.AccessException;
+import ru.practicum.shareit.exception.ConflictException;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
@@ -29,7 +32,7 @@ public class BookingServiceImpl implements BookingService {
         User user = getUser(userId);
         Item item = getItem(dto.getItemId());
 
-        if (item.getOwner().getId().equals(userId)) {
+        if (item.getOwner() != null && item.getOwner().getId().equals(userId)) {
             throw new ConflictException("Owner cannot book own item");
         }
 
@@ -46,12 +49,9 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = BookingMapper.toEntity(dto, user, item);
 
-        // 🔥 ГЛАВНОЕ ИСПРАВЛЕНИЕ
-        booking.setStatus(BookingStatus.WAITING);
+        // status уже выставлен в mapper → НЕ ДУБЛИРУЕМ
 
-        return BookingMapper.toDto(
-                bookingRepository.save(booking)
-        );
+        return BookingMapper.toDto(bookingRepository.save(booking));
     }
 
     @Override
@@ -60,7 +60,9 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Booking not found"));
 
-        if (!booking.getItem().getOwner().getId().equals(userId)) {
+        if (booking.getItem() == null
+                || booking.getItem().getOwner() == null
+                || !booking.getItem().getOwner().getId().equals(userId)) {
             throw new AccessException("Only owner can approve");
         }
 
@@ -79,8 +81,12 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Booking not found"));
 
-        boolean isOwner = booking.getItem().getOwner().getId().equals(userId);
-        boolean isBooker = booking.getBooker().getId().equals(userId);
+        boolean isOwner = booking.getItem() != null
+                && booking.getItem().getOwner() != null
+                && booking.getItem().getOwner().getId().equals(userId);
+
+        boolean isBooker = booking.getBooker() != null
+                && booking.getBooker().getId().equals(userId);
 
         if (!isOwner && !isBooker) {
             throw new AccessException("Access denied");
@@ -93,6 +99,10 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDto> getUserBookings(Long userId, BookingState state) {
 
         getUser(userId);
+
+        if (state == null) {
+            state = BookingState.ALL;
+        }
 
         List<Booking> bookings = switch (state) {
             case ALL -> bookingRepository.findByBookerIdOrderByStartDesc(userId);
@@ -112,6 +122,10 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDto> getOwnerBookings(Long userId, BookingState state) {
 
         getUser(userId);
+
+        if (state == null) {
+            state = BookingState.ALL;
+        }
 
         List<Booking> bookings = switch (state) {
             case ALL -> bookingRepository.findByItemOwnerIdOrderByStartDesc(userId);

@@ -4,6 +4,8 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.User;
 
+import java.util.ArrayList;
+
 
 public class ItemMapper {
 
@@ -26,6 +28,7 @@ public class ItemMapper {
                 .available(item.getAvailable())
                 .ownerId(item.getOwner() != null ? item.getOwner().getId() : null)
                 .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
+                .comments(new ArrayList<>())
                 .build();
     }
 }

@@ -1,48 +1,80 @@
 package ru.practicum.shareit;
 
 
+
+
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import ru.practicum.shareit.exception.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
+
 
 class ErrorHandlerTest {
 
     private final ErrorHandler handler = new ErrorHandler();
 
     @Test
-    void notFoundHandler() {
-        NotFoundException ex = new NotFoundException("not found");
+    void notFound() {
+        ErrorResponse resp = handler.notFound(
+                new NotFoundException("not found")
+        );
 
-        var result = handler.notFound(ex);
-
-        assertEquals("not found", result.get("error"));
+        assertEquals("not found", resp.get("error"));
     }
 
     @Test
-    void badRequestHandler() {
-        ValidationException ex = new ValidationException("bad request");
+    void validation() {
+        ErrorResponse resp = handler.badRequest(
+                new ValidationException("bad request")
+        );
 
-        var result = handler.badRequest(ex);
-
-        assertEquals("bad request", result.get("error"));
+        assertEquals("bad request", resp.get("error"));
     }
 
     @Test
-    void forbiddenHandler() {
-        AccessException ex = new AccessException("forbidden");
+    void forbidden() {
+        ErrorResponse resp = handler.forbidden(
+                new AccessException("forbidden")
+        );
 
-        var result = handler.forbidden(ex);
-
-        assertEquals("forbidden", result.get("error"));
+        assertEquals("forbidden", resp.get("error"));
     }
 
     @Test
-    void conflictHandler() {
-        ConflictException ex = new ConflictException("conflict");
+    void conflict() {
+        ErrorResponse resp = handler.conflict(
+                new ConflictException("conflict")
+        );
 
-        var result = handler.conflict(ex);
+        assertEquals("conflict", resp.get("error"));
+    }
 
-        assertEquals("conflict", result.get("error"));
+    @Test
+    void db_error() {
+        ErrorResponse resp = handler.handleDb(
+                new DataIntegrityViolationException("db error")
+        );
+
+        assertEquals("Constraint violation", resp.get("error"));
+    }
+
+    @Test
+    void illegal_argument() {
+        ErrorResponse resp = handler.badRequestIllegal(
+                new IllegalArgumentException("illegal")
+        );
+
+        assertEquals("illegal", resp.get("error"));
+    }
+
+    @Test
+    void generic() {
+        ErrorResponse resp = handler.error(
+                new RuntimeException("unexpected")
+        );
+
+        assertEquals("unexpected", resp.get("error"));
     }
 }
