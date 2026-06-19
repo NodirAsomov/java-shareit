@@ -5,14 +5,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-
 @Component
 public class ItemClient extends BaseClient {
 
     private static final String API_PREFIX = "/items";
 
     public ItemClient(RestTemplate restTemplate,
-                      @Value("${shareit-server.url}") String serverUrl) {
+                      @Value("${SHAREIT_SERVER_URL}") String serverUrl) {
         super(restTemplate, serverUrl);
     }
 

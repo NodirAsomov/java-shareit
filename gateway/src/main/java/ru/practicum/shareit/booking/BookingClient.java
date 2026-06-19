@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ public class BookingClient extends BaseClient {
     private static final String API_PREFIX = "/bookings";
 
     public BookingClient(RestTemplate restTemplate,
-                         @Value("${shareit-server.url}") String serverUrl) {
+                         @Value("${SHAREIT_SERVER_URL}") String serverUrl) {
         super(restTemplate, serverUrl);
     }
 
@@ -22,8 +23,10 @@ public class BookingClient extends BaseClient {
                                               BookingState state,
                                               int from,
                                               int size) {
-        return get(API_PREFIX + "?state=" + state.name()
-                + "&from=" + from + "&size=" + size, userId);
+        return get(API_PREFIX
+                + "?state=" + state.name()
+                + "&from=" + from
+                + "&size=" + size, userId);
     }
 
     public ResponseEntity<Object> bookItem(long userId, Object body) {

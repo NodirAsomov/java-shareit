@@ -1,6 +1,5 @@
 package ru.practicum.shareit.client;
 
-
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -13,27 +12,45 @@ public abstract class BaseClient {
 
     public BaseClient(RestTemplate rest, String serverUrl) {
         this.rest = rest;
-        this.serverUrl = serverUrl;
+        this.serverUrl = serverUrl.endsWith("/")
+                ? serverUrl.substring(0, serverUrl.length() - 1)
+                : serverUrl;
     }
 
     protected ResponseEntity<Object> get(String path, Long userId) {
-        HttpEntity<Void> entity = new HttpEntity<>(defaultHeaders(userId));
-        return rest.exchange(serverUrl + path, HttpMethod.GET, entity, Object.class);
+        return rest.exchange(
+                serverUrl + path,
+                HttpMethod.GET,
+                new HttpEntity<>(defaultHeaders(userId)),
+                Object.class
+        );
     }
 
     protected ResponseEntity<Object> post(String path, Long userId, Object body) {
-        HttpEntity<Object> entity = new HttpEntity<>(body, defaultHeaders(userId));
-        return rest.exchange(serverUrl + path, HttpMethod.POST, entity, Object.class);
+        return rest.exchange(
+                serverUrl + path,
+                HttpMethod.POST,
+                new HttpEntity<>(body, defaultHeaders(userId)),
+                Object.class
+        );
     }
 
     protected ResponseEntity<Object> patch(String path, Long userId, Object body) {
-        HttpEntity<Object> entity = new HttpEntity<>(body, defaultHeaders(userId));
-        return rest.exchange(serverUrl + path, HttpMethod.PATCH, entity, Object.class);
+        return rest.exchange(
+                serverUrl + path,
+                HttpMethod.PATCH,
+                new HttpEntity<>(body, defaultHeaders(userId)),
+                Object.class
+        );
     }
 
     protected ResponseEntity<Object> delete(String path, Long userId) {
-        HttpEntity<Void> entity = new HttpEntity<>(defaultHeaders(userId));
-        return rest.exchange(serverUrl + path, HttpMethod.DELETE, entity, Object.class);
+        return rest.exchange(
+                serverUrl + path,
+                HttpMethod.DELETE,
+                new HttpEntity<>(defaultHeaders(userId)),
+                Object.class
+        );
     }
 
     private HttpHeaders defaultHeaders(Long userId) {
