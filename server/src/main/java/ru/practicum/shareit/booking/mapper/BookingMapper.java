@@ -15,10 +15,6 @@ public class BookingMapper {
 
     public static Booking toEntity(BookingCreateDto dto, User booker, Item item) {
 
-        if (dto == null) {
-            throw new IllegalArgumentException("BookingCreateDto is null");
-        }
-
         Booking booking = new Booking();
 
         booking.setItem(item);
@@ -33,8 +29,6 @@ public class BookingMapper {
     }
 
     public static BookingDto toDto(Booking booking) {
-
-        if (booking == null) return null;
 
         return BookingDto.builder()
                 .id(booking.getId())
