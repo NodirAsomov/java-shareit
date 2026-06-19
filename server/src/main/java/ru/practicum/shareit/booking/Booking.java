@@ -24,6 +24,9 @@ public class Booking {
     @Column(name = "end_date", nullable = false)
     private LocalDateTime end;
 
+    @Column(name = "created", nullable = false)
+    private LocalDateTime created;
+
     @ManyToOne
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;

@@ -39,9 +39,13 @@ class BookingServiceImplTest {
 
 
     @Test
+
     void create_success() {
+        Long userId = 1L;
+
         User user = new User();
-        user.setId(1L);
+        user.setId(userId);
+
         User owner = new User();
         owner.setId(2L);
 
@@ -55,16 +59,29 @@ class BookingServiceImplTest {
         dto.setStart(LocalDateTime.now().plusDays(1));
         dto.setEnd(LocalDateTime.now().plusDays(2));
 
-        Booking booking = new Booking();
-        BookingDto result = new BookingDto();
+        Booking savedBooking = new Booking();
+        savedBooking.setId(100L);
+        savedBooking.setItem(item);
+        savedBooking.setBooker(user);
+        savedBooking.setStart(dto.getStart());
+        savedBooking.setEnd(dto.getEnd());
+        savedBooking.setStatus(BookingStatus.WAITING);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
-        when(bookingMapper.toEntity(any(), any(), any())).thenReturn(booking);
-        when(bookingRepository.save(any())).thenReturn(booking);
-        when(bookingMapper.toDto(any())).thenReturn(result);
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
 
-        assertNotNull(service.create(1L, dto));
+        when(itemRepository.findById(10L))
+                .thenReturn(Optional.of(item));
+
+        when(bookingRepository.save(any(Booking.class)))
+                .thenReturn(savedBooking);
+
+        BookingDto result = service.create(userId, dto);
+
+        assertNotNull(result);
+        assertEquals(savedBooking.getId(), result.getId());
+
+        verify(bookingRepository, times(1)).save(any(Booking.class));
     }
 
     @Test
@@ -112,23 +129,32 @@ class BookingServiceImplTest {
     }
 
 
+
     @Test
     void approve_success() {
         User owner = new User();
         owner.setId(1L);
+
+        User booker = new User();
+        booker.setId(2L);
 
         Item item = new Item();
         item.setOwner(owner);
 
         Booking booking = new Booking();
         booking.setItem(item);
+        booking.setBooker(booker);
         booking.setStatus(BookingStatus.WAITING);
 
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(any())).thenReturn(booking);
-        when(bookingMapper.toDto(any())).thenReturn(new BookingDto());
+        when(bookingRepository.findById(5L))
+                .thenReturn(Optional.of(booking));
 
-        assertNotNull(service.approve(1L, 5L, true));
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        BookingDto result = service.approve(1L, 5L, true);
+
+        assertNotNull(result);
     }
 
     @Test
@@ -189,24 +215,27 @@ class BookingServiceImplTest {
     }
 
     @Test
+
     void getById_success_owner() {
         User owner = new User();
         owner.setId(1L);
 
-        Item item = new Item();
-        item.setOwner(owner);
-
         User booker = new User();
         booker.setId(2L);
+
+        Item item = new Item();
+        item.setOwner(owner);
 
         Booking booking = new Booking();
         booking.setItem(item);
         booking.setBooker(booker);
 
-        when(bookingRepository.findById(7L)).thenReturn(Optional.of(booking));
-        when(bookingMapper.toDto(any())).thenReturn(new BookingDto());
+        when(bookingRepository.findById(7L))
+                .thenReturn(Optional.of(booking));
 
-        assertNotNull(service.getById(1L, 7L));
+        BookingDto result = service.getById(1L, 7L);
+
+        assertNotNull(result);
     }
 
 
