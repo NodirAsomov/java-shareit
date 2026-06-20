@@ -200,7 +200,7 @@ class ItemServiceImplTest {
                 anyLong(), anyLong(), eq(BookingStatus.APPROVED), any()
         )).thenReturn(true);
 
-        when(commentRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(commentRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
 
         assertDoesNotThrow(() ->
                 service.addComment(1L, 10L, new CommentDto()));

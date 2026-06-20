@@ -213,7 +213,7 @@ public class ItemServiceImpl implements ItemService {
         comment.setAuthor(user);
         comment.setCreated(LocalDateTime.now());
 
-        Comment saved = commentRepository.save(comment);
+        Comment saved = commentRepository.saveAndFlush(comment);
 
         return CommentMapper.toDto(saved);
     }
