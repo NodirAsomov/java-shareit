@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import ru.practicum.shareit.booking.dto.ItemRequestDto;
+
 @Component
 public class RequestClient extends BaseClient {
 
@@ -15,7 +17,7 @@ public class RequestClient extends BaseClient {
         super(restTemplate, serverUrl);
     }
 
-    public ResponseEntity<Object> create(Long userId, Object body) {
+    public ResponseEntity<Object> create(Long userId, ItemRequestDto body) {
         return post(API_PREFIX, userId, body);
     }
 

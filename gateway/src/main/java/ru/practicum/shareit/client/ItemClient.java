@@ -5,13 +5,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Component
 public class ItemClient extends BaseClient {
 
     private static final String API_PREFIX = "/items";
 
     public ItemClient(RestTemplate restTemplate,
-                      @Value("${SHAREIT_SERVER_URL}") String serverUrl) {
+                      @Value("${shareit-server.url}") String serverUrl) {
         super(restTemplate, serverUrl);
     }
 
@@ -29,5 +32,14 @@ public class ItemClient extends BaseClient {
 
     public ResponseEntity<Object> getAll(Long userId) {
         return get(API_PREFIX, userId);
+    }
+
+    public ResponseEntity<Object> search(Long userId, String text) {
+        return get(API_PREFIX + "/search?text="
+                + URLEncoder.encode(text, StandardCharsets.UTF_8), userId);
+    }
+
+    public ResponseEntity<Object> addComment(Long userId, Long itemId, Object body) {
+        return post(API_PREFIX + "/" + itemId + "/comment", userId, body);
     }
 }

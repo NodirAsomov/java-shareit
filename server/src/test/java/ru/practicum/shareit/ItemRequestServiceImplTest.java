@@ -4,6 +4,7 @@ package ru.practicum.shareit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Pageable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -76,6 +77,7 @@ class ItemRequestServiceImplTest {
 
     @Test
     void getOwn_shouldReturnList() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(requestRepository.findByRequestorIdOrderByCreatedDesc(1L))
                 .thenReturn(List.of(request));
 
@@ -90,13 +92,14 @@ class ItemRequestServiceImplTest {
 
     @Test
     void getAll_shouldReturnList() {
-        when(requestRepository.findByRequestorIdNotOrderByCreatedDesc(1L))
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(requestRepository.findByRequestorIdNot(eq(1L), any(Pageable.class)))
                 .thenReturn(List.of(request));
 
         when(itemRepository.findByRequestId(1L))
                 .thenReturn(List.of());
 
-        List<ItemRequestResponseDto> result = service.getAll(1L);
+        List<ItemRequestResponseDto> result = service.getAll(1L, 0, 10);
 
         assertEquals(1, result.size());
     }
@@ -104,6 +107,7 @@ class ItemRequestServiceImplTest {
 
     @Test
     void getById_shouldThrow_whenNotFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(requestRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
@@ -113,6 +117,7 @@ class ItemRequestServiceImplTest {
 
     @Test
     void getById_shouldReturnDto() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(requestRepository.findById(1L))
                 .thenReturn(Optional.of(request));
 

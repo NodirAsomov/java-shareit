@@ -1,7 +1,10 @@
 package ru.practicum.shareit.request;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
@@ -40,6 +43,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestResponseDto> getOwn(Long userId) {
+        getUser(userId);
 
         List<ItemRequest> requests =
                 requestRepository.findByRequestorIdOrderByCreatedDesc(userId);
@@ -50,10 +54,18 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
-    public List<ItemRequestResponseDto> getAll(Long userId) {
+    public List<ItemRequestResponseDto> getAll(Long userId, int from, int size) {
+        getUser(userId);
+
+        if (from < 0 || size <= 0) {
+            throw new ValidationException("Invalid pagination parameters");
+        }
 
         List<ItemRequest> requests =
-                requestRepository.findByRequestorIdNotOrderByCreatedDesc(userId);
+                requestRepository.findByRequestorIdNot(
+                        userId,
+                        PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "created"))
+                );
 
         return requests.stream()
                 .map(r -> toDto(r, getItems(r.getId())))
@@ -62,6 +74,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestResponseDto getById(Long userId, Long requestId) {
+        getUser(userId);
 
         ItemRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request not found"));
@@ -91,5 +104,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .created(request.getCreated())
                 .items(items)
                 .build();
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 }

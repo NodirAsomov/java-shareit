@@ -15,7 +15,7 @@ public class BookingClient extends BaseClient {
     private static final String API_PREFIX = "/bookings";
 
     public BookingClient(RestTemplate restTemplate,
-                         @Value("${SHAREIT_SERVER_URL}") String serverUrl) {
+                         @Value("${shareit-server.url}") String serverUrl) {
         super(restTemplate, serverUrl);
     }
 
@@ -35,5 +35,19 @@ public class BookingClient extends BaseClient {
 
     public ResponseEntity<Object> getBooking(long userId, Long bookingId) {
         return get(API_PREFIX + "/" + bookingId, userId);
+    }
+
+    public ResponseEntity<Object> approve(long userId, Long bookingId, boolean approved) {
+        return patch(API_PREFIX + "/" + bookingId + "?approved=" + approved, userId, null);
+    }
+
+    public ResponseEntity<Object> getOwnerBookings(long userId,
+                                                   BookingState state,
+                                                   int from,
+                                                   int size) {
+        return get(API_PREFIX
+                + "/owner?state=" + state.name()
+                + "&from=" + from
+                + "&size=" + size, userId);
     }
 }

@@ -56,7 +56,7 @@ class ItemRequestControllerTest {
 
     @Test
     void getAll_shouldReturnOk() throws Exception {
-        when(service.getAll(anyLong())).thenReturn(List.of());
+        when(service.getAll(anyLong(), anyInt(), anyInt())).thenReturn(List.of());
 
         mockMvc.perform(get("/requests/all")
                         .header("X-Sharer-User-Id", 1))

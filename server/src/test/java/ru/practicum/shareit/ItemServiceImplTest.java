@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.shareit.item.*;
 import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
@@ -33,6 +35,8 @@ class ItemServiceImplTest {
     CommentRepository commentRepository;
     @Mock
     BookingRepository bookingRepository;
+    @Mock
+    ItemRequestRepository requestRepository;
 
     @InjectMocks
     ItemServiceImpl service;
@@ -68,6 +72,30 @@ class ItemServiceImplTest {
         dto.setName("item");
 
         assertDoesNotThrow(() -> service.create(1L, dto));
+    }
+
+    @Test
+    void create_withRequest_success() {
+        ItemRequest request = new ItemRequest();
+        request.setId(99L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(requestRepository.findById(99L)).thenReturn(Optional.of(request));
+        when(itemRepository.save(any())).thenAnswer(i -> {
+            Item saved = i.getArgument(0);
+            saved.setId(10L);
+            return saved;
+        });
+
+        ItemDto dto = new ItemDto();
+        dto.setName("item");
+        dto.setDescription("desc");
+        dto.setAvailable(true);
+        dto.setRequestId(99L);
+
+        ItemDto result = service.create(1L, dto);
+
+        assertEquals(99L, result.getRequestId());
     }
 
     // ---------------- UPDATE ----------------
