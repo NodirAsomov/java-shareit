@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
+    created TIMESTAMP NOT NULL,
 
     item_id BIGINT NOT NULL,
     booker_id BIGINT NOT NULL,

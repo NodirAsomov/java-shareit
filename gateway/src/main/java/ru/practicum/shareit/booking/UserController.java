@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,7 @@ public class UserController {
     private final UserClient client;
 
     @PostMapping
-    public ResponseEntity<Object> create(@RequestBody UserDto dto) {
+    public ResponseEntity<Object> create(@RequestBody @Valid UserDto dto) {
         return client.create(dto);
     }
 
