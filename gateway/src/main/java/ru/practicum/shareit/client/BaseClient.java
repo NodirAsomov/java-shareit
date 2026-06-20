@@ -40,7 +40,6 @@ public abstract class BaseClient {
         } catch (HttpStatusCodeException e) {
             return ResponseEntity
                     .status(e.getStatusCode())
-                    .headers(e.getResponseHeaders())
                     .body(e.getResponseBodyAsString());
         }
     }
