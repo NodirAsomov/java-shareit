@@ -114,7 +114,7 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void create_invalid_dates() {
+    void create_datesAreValidatedInGateway() {
         BookingCreateDto dto = new BookingCreateDto();
         dto.setItemId(10L);
         dto.setStart(LocalDateTime.now().plusDays(2));
@@ -122,9 +122,11 @@ class BookingServiceImplTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
+        when(bookingRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        assertThrows(ValidationException.class,
-                () -> service.create(1L, dto));
+        BookingDto result = service.create(1L, dto);
+
+        assertNotNull(result);
     }
 
     // ---------------- APPROVE ----------------

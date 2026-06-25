@@ -81,7 +81,7 @@ class ItemRequestServiceImplTest {
         when(requestRepository.findByRequestorIdOrderByCreatedDesc(1L))
                 .thenReturn(List.of(request));
 
-        when(itemRepository.findByRequestId(1L))
+        when(itemRepository.findByRequestIdIn(List.of(1L)))
                 .thenReturn(List.of());
 
         List<ItemRequestResponseDto> result = service.getOwn(1L);
@@ -96,7 +96,7 @@ class ItemRequestServiceImplTest {
         when(requestRepository.findByRequestorIdNot(eq(1L), any(Pageable.class)))
                 .thenReturn(List.of(request));
 
-        when(itemRepository.findByRequestId(1L))
+        when(itemRepository.findByRequestIdIn(List.of(1L)))
                 .thenReturn(List.of());
 
         List<ItemRequestResponseDto> result = service.getAll(1L, 0, 10);
@@ -121,7 +121,7 @@ class ItemRequestServiceImplTest {
         when(requestRepository.findById(1L))
                 .thenReturn(Optional.of(request));
 
-        when(itemRepository.findByRequestId(1L))
+        when(itemRepository.findByRequestIdIn(List.of(1L)))
                 .thenReturn(List.of());
 
         ItemRequestResponseDto result = service.getById(1L, 1L);

@@ -9,6 +9,8 @@ import ru.practicum.shareit.booking.dto.CommentDto;
 import ru.practicum.shareit.booking.dto.ItemDto;
 import ru.practicum.shareit.client.ItemClient;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
@@ -53,6 +55,10 @@ public class ItemController {
     public ResponseEntity<Object> search(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @RequestParam String text) {
+
+        if (text == null || text.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
 
         return client.search(userId, text);
     }

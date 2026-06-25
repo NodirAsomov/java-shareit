@@ -15,7 +15,6 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,16 +39,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Item is not available");
         }
 
-        if (dto.getStart() == null
-                || dto.getEnd() == null
-                || !dto.getStart().isBefore(dto.getEnd())
-                || dto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Invalid dates");
-        }
-
         Booking booking = BookingMapper.toEntity(dto, user, item);
-
-        // status уже выставлен в mapper → НЕ ДУБЛИРУЕМ
 
         return BookingMapper.toDto(bookingRepository.save(booking));
     }
